@@ -1,0 +1,701 @@
+﻿@page "/users"
+
+@inject IUserService userService
+@inject IActivityService activityService
+@inject IComponentComunicationService notificationSrv
+@inject IDepartmentService departmentService
+@inject IGeneralService generalService
+@inject ITimesheetTypeService timesheetTypeService
+@inject IEmployeeTypeService employeeTypeService
+@inject IJSRuntime JSRuntime
+@inject IUserActivityCodeService userActivityCodeService
+@inject NavigationManager navManager
+
+
+<style>
+
+    .whitesmoke-tab {
+        background-color: whitesmoke;
+    }
+
+    .blue-tab {
+        background-color: deepskyblue;
+    }
+
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .custom-input {
+        margin-left: 35px;
+        width: 20px !important;
+        height: 20px !important;
+    }
+
+</style>
+
+
+@if (_users == null)
+{
+    <TelerikLoaderContainer Visible="@( _users == null )" Text="Loading Users..." />
+}
+else
+{
+    <h3>Users</h3>
+
+    @*    <div class="jumbotron filter">
+        <div class="filter-cell">
+            <label>Status:</label>
+            <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
+            </TelerikDropDownList>
+        </div>
+    </div>*@
+
+    <TelerikGrid Data=@_users
+             EditMode="@GridEditMode.Popup"
+             @ref="@GridRef"
+             Pageable="true"
+             PageSize="12"
+             Navigable="true"
+             ConfirmDelete="true"
+             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+             OnDelete=@DeleteUser>
+        <GridToolBarTemplate>
+            <GridCommandButton Icon="@FontIcon.Plus" OnClick="async () => { await AddOrUpdateUser(0); }">New</GridCommandButton>
+        </GridToolBarTemplate>
+        <GridSettings>
+            <GridPopupEditSettings Width="1200px"
+                               Height="1200px"
+                               Class="custom-popup">
+            </GridPopupEditSettings>
+            <GridPopupEditFormSettings Orientation="@FormOrientation.Horizontal"
+                                   ButtonsLayout="FormButtonsLayout.Start">
+            </GridPopupEditFormSettings>
+        </GridSettings>
+        <GridColumns>
+
+            <GridCommandColumn Width="30px">
+                <GridCommandButton Icon="@FontIcon.Pencil" Class="_btn _btnEdit" OnClick="@((args) => AddOrUpdateUser((args.Item as User).Id))"></GridCommandButton>
+                <GridCommandButton Command="Delete" Icon="@FontIcon.Trash" Class="_btn red _btnDelete"></GridCommandButton>
+                <GridCommandButton Command="Save" Icon="@FontIcon.Save" ShowInEdit="true">Update</GridCommandButton>
+                <GridCommandButton Command="Cancel" Icon="@FontIcon.Cancel" ShowInEdit="true">Cancel</GridCommandButton>
+            </GridCommandColumn>
+            <GridColumn Field="@nameof(User.FirstName)" Title="First Name" Width="110px" />
+            <GridColumn Field="@nameof(User.LastName)" Title="Last Name" Width="110px" />
+            <GridColumn Field="@nameof(User.LoginName)" Title="LoginName" Width="110px" />
+
+            <GridColumn Field="@nameof(User.Disabled)" Title="Status" Width="110px">
+                <FilterCellTemplate>
+                    <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
+                    </TelerikDropDownList>
+                </FilterCellTemplate>
+                <Template>
+                    @((context as User).Disabled.Value ? "Disabled" : "Enabled")
+                </Template>
+            </GridColumn>
+
+        </GridColumns>
+    </TelerikGrid>
+
+
+    <TelerikWindow @bind-Visible="_windowVisible"
+               Modal="true"
+               Width="1600px"
+               MaxHeight="900px"
+               FooterLayoutAlign="@WindowFooterLayoutAlign.End">
+        <WindowTitle>USER MAINTENANCE</WindowTitle>
+        <WindowContent>
+            <TelerikTabStrip>
+                <TabStripTab Title="DETAILS" Class="whitesmoke-tab">
+                    @{
+                        <TelerikForm EditContext="_editContext" Columns="2" ColumnSpacing="30px">
+                            <FormValidation>
+                                <DataAnnotationsValidator />
+                            </FormValidation>
+
+                            <FormItems>
+                                <FormItem Field="FirstName" LabelText="First Name" Class="required-field"></FormItem>
+                                <FormItem Field="LastName" LabelText="Last Name" Class="required-field"></FormItem>
+                                <FormItem Field="LoginName" LabelText="Login" Class="required-field"></FormItem>
+
+                                <FormItem Field="Disabled">
+                                    <Template>
+                                        <div>
+                                            <label for="myComboBox">Status</label>
+                                        </div>
+                                        <div>
+                                            <TelerikComboBox Id="myComboBox" Data="@StatusOptions" ClearButton="false" TextField="Text" ValueField="Value" @bind-Value="@SelectedUser.Disabled" />
+                                        </div>
+                                    </Template>
+                                </FormItem>
+
+
+                                <FormItem Field="StartDate" LabelText="Start Date" Class="required-field"></FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.StartDate)" />
+
+                                <FormItem Field="EndDate" LabelText="End Date"></FormItem>
+
+                                <FormItem Field="RoleId">
+                                    <Template>
+                                        <label for="role" style="margin-right: 3px;">Role<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedUser.RoleId"
+                                                     DefaultText="Select a role"
+                                                     Filterable="true"
+                                                     Data="@_roleList"
+                                                     TextField="@nameof(General.Value)"
+                                                     ValueField="@nameof(General.GralId)"
+                                                     Size="small">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.RoleId)" />
+
+
+                                <FormItem Field="SupervisorId">
+                                    <Template>
+                                        <label for="supervisor" style="margin-right: 3px;">Supervisor<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedUser.SupervisorId"
+                                                     DefaultText="Select a supervisor"
+                                                     Filterable="true"
+                                                     Data="@_supervisorsList"
+                                                     TextField="@nameof(User.Username)"
+                                                     ValueField="@nameof(User.Id)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.SupervisorId)" />
+
+
+                                <FormItem Field="TimesheetTemplate">
+                                    <Template>
+                                        <label for="Timesheet Template" style="margin-right: 3px;">Timesheet Template<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedUser.TimesheetTemplate"
+                                                     DefaultText="Select a Timesheet Template"
+                                                     Filterable="true"
+                                                     Data="@_timesheetTypeList"
+                                                     TextField="@nameof(TimesheetType.TemplateName)"
+                                                     ValueField="@nameof(TimesheetType.TimeTemplateId)"
+                                                     Size="small">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.TimesheetTemplate)" />
+
+                                <FormItem Field="DepartmentId:">
+                                    <Template>
+                                        <label for="department" style="margin-right: 3px;">Department<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedUser.DepartmentId"
+                                                     DefaultText="Select a department"
+                                                     Filterable="true"
+                                                     Data="@_departmentsList"
+                                                     TextField="@nameof(Department.Name)"
+                                                     ValueField="@nameof(Department.Id)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.DepartmentId)" />
+
+                                <FormItem Field="EmployeeTypeId">
+                                    <Template>
+                                        <label for="employeeType" style="margin-right: 3px;">Employee Type<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedUser.EmpTypeId"
+                                                     DefaultText="Select an employee type"
+                                                     Filterable="true"
+                                                     Data="@_employeeTypesList"
+                                                     TextField="@nameof(EmployeeType.Employeetypename)"
+                                                     ValueField="@nameof(EmployeeType.Emptypeid)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.EmpTypeId)" />
+
+
+
+                                <FormItem Field="Email" LabelText="Email" Class="required-field"></FormItem>
+                                <FormItem Field="ReportsTo" LabelText="Reports To"></FormItem>
+                                <FormItem Field="JobTitle" LabelText="Job Title"></FormItem>
+
+                            </FormItems>
+                            <FormButtons></FormButtons>
+                        </TelerikForm>
+                    }
+                </TabStripTab>
+                @if (SelectedUser.Id > 0)
+                {
+                    <TabStripTab Title="ACTIVITIES" Class="whitesmoke-tab">
+                        <div class="row">
+                            @foreach (var activity in _activities)
+                            {
+                                <div class="col-2" style="font-size: smaller; padding-bottom: 20px;">
+                                    <div style="display: flex; align-items: center;">
+                                        <div style="width: 30%;">
+                                            <TelerikCheckBox Value="@(VerifyCheckedProperty(activity.ActivityId))"
+                                                 TValue="bool"
+                                                 Id="@activity.ActivityId.ToString()"
+                                                 Class="activity"
+                                                 ValueChanged="@((args) => OnActivityCheckboxChanged(activity.ActivityId, args))">
+                                            </TelerikCheckBox>
+                                        </div>
+                                        <div style="width: 70%; font-size: small;">
+                                @activity.ActivityName
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+
+                    </TabStripTab>
+                }
+
+                @if (SelectedUser.Id > 0)
+                {
+                    <TabStripTab Title="SUBSTITUTES" Class="whitesmoke-tab">
+                        <div class="row">
+                            @foreach (var user in _users.Where(x => !x.Disabled.Value))
+                            {
+                                <div class="col-2" style="font-size: medium; padding-bottom:20px; ">
+                                    <div style="display: flex; align-items: center;">
+                                        <div style="width: 30%; ">
+                                            <TelerikCheckBox Value="@(VerifySubstituteProperty(user.Id))"
+                                                 TValue="bool"
+                                                 Id="@user.Id.ToString()"
+                                                 Class="substitute"
+                                                 ValueChanged="@((args) => OnSubstituteCheckboxChanged(user.Id, args))">
+                                            </TelerikCheckBox>
+                                        </div>
+                                        <div style="width: 70%;font-size: medium ;">
+                                            @user.Username
+                                        </div>
+                                    </div>
+                                </div>
+
+                            }
+                        </div>
+
+                    </TabStripTab>
+                }
+
+            </TelerikTabStrip>
+
+        </WindowContent>
+        <WindowFooter>
+            <TelerikButton OnClick="SaveUserInfo" Title="Saving" Icon="@nameof(FontIcon.Save)" Class="colorbutton">Save</TelerikButton>
+            <TelerikButton OnClick="Cancel" Icon="@nameof(FontIcon.Cancel)" ButtonType="@ButtonType.Button" Class="colorcancel">
+                Cancel
+            </TelerikButton>
+        </WindowFooter>
+    </TelerikWindow>
+
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    public List<User> _users = null;
+    public List<Activity> _activities = null;
+    public List<Substitute> _substitutes = null;
+    private List<UserActivityCodeLight> _userActivities = null;
+    private List<Substitute> _userSubstitutes = null;
+    private List<Department> _departmentsList = new List<Department>();
+    private List<User> _supervisorsList = new List<User>();
+    private List<EmployeeType> _employeeTypesList = new List<EmployeeType>();
+    private EditContext _editContext;
+    private List<General> _roleList = new List<General>();
+    private List<TimesheetType> _timesheetTypeList = new List<TimesheetType>();
+
+    private bool _windowVisible = false;
+
+    private void OpenWindow()
+    {
+        _windowVisible = true;
+    }
+
+    private void CloseWindow()
+    {
+        _windowVisible = false;
+    }
+
+    List<string> TheValues { get; set; }
+    List<string> Options { get; set; } = new List<string> { "first", "second", "third" };
+
+    private string _tempUsers;
+    public User EditItem { get; set; }
+    public TelerikGrid<User> GridRef { get; set; }
+
+    public User SelectedUser { get; set; }
+
+    private List<KeyValue> _customFilterData = new List<KeyValue>
+    {
+        new KeyValue { Key = 0, Value = "All" },
+        new KeyValue { Key = 1, Value = "Disabled" },
+        new KeyValue { Key = 2, Value = "Enabled" },
+    };
+
+    private int selectedValue = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUsers();
+        await GetActivities();
+        await GetDepartmentList();
+        await GetSupervisorsList();
+        
+        await GetEmployeeTypesList();
+        await GetRoleList();
+        await GetTimeSheetTypesList();
+
+    }
+
+    private async Task GetUsers()
+    {
+        var response = await userService.GetUsers(null);
+        _users = response.Data.ToList();
+
+        SetTempUsers();
+    }
+
+    private async Task GetDepartmentList()
+    {
+        var response = await departmentService.GetDepartments(false);
+        _departmentsList = response.Data.ToList();
+
+    }
+
+    private async Task GetTimeSheetTypesList()
+    {
+        var response = await timesheetTypeService.GetTimesheetTypes();
+        _timesheetTypeList = response.Data.ToList();
+    }
+
+    private async Task GetEmployeeTypesList()
+    {
+        var response = await employeeTypeService.GetEmployeeTypes();
+        response.Data = response.Data.OrderBy(e => e.Employeetypename).ToList();
+        _employeeTypesList = response.Data.ToList();
+    }
+
+    private async Task GetSupervisorsList()
+    {
+        var response = await userService.GetUsers(null);
+        _supervisorsList = response.Data.Where(x => !x.Disabled.Value).OrderBy(x => x.LastName).ThenBy(x => x.FirstName).ToList();
+    }
+
+    private async Task GetActivities()
+    {
+        var response = await activityService.GetActivitiesForUser();
+        _activities = response.Data.ToList();
+    }
+
+    private async Task GetSubstitutesList(int userId)
+    {
+        var response = await userService.GetSubstitutesForUser(userId);
+        _userSubstitutes = response.Data.ToList();
+    }
+
+    private async Task GetUserActivities(int userId)
+    {
+        var response = await userService.GetActivitiesByUserForDropDown(userId);
+        _userActivities = response.Data.ToList();
+    }
+
+    private async Task GetRoleList()
+    {
+        _roleList = (await generalService.GetGeneralValues("Role")).Data.ToList();
+    }
+
+
+    private void FilterTable(object item)
+    {
+        var users = JsonConvert.DeserializeObject<IEnumerable<User>>(_tempUsers);
+
+        switch (item)
+        {
+            case 0:
+
+                _users = users.ToList();
+                break;
+            case 1:
+                _users = users.Where(x => x.Disabled.Value).ToList();
+                break;
+            case 2:
+                _users = users.Where(x => !x.Disabled.Value).ToList();
+                break;
+            default:
+                _users = users.ToList();
+                break;
+        }
+    }
+
+    private async Task AddOrUpdateUser(int userId)
+    {
+        SelectedUser = userId > 0
+            ? _users.FirstOrDefault(x => x.Id == userId)
+            : new User();
+        _editContext = new EditContext(SelectedUser);
+
+        if (userId > 0)
+        {
+            await GetUserActivities(userId);
+            await GetSubstitutesList(userId);
+        }
+
+        OpenWindow();
+    }
+
+    public async Task DeleteUser(GridCommandEventArgs args)
+    {
+        ApiResponse<bool> response = await userService.DeleteUser(((User)args.Item).Id);
+
+        if (response.Status == ResponseStatus.Success)
+        {
+            if (!response.Data)
+            {
+                notificationSrv.SendNotification(new Notification
+                    {
+                        NotificationType = NotificationType.Warning,
+                        Message = "The user cannot be deleted as it does have records on the Database."
+                    });
+
+                return;
+            }
+            _users.Remove((User)args.Item);
+            SetTempActivities();
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Success,
+                    Message = "The user was deleted successfully"
+                });
+        }
+        else
+        {
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Error,
+                    Message = "The user was not deleted"
+                });
+        }
+    }
+
+    private void SetTempActivities()
+    {
+        _tempUsers = JsonConvert.SerializeObject(_users);
+    }
+
+
+    private async Task OnCancel()
+    {
+        await ExitEditAsync();
+    }
+
+    private async Task ExitEditAsync()
+    {
+        var state = GridRef?.GetState();
+        state.OriginalEditItem = null;
+        state.EditItem = null;
+        state.InsertedItem = null;
+
+        await GridRef?.SetStateAsync(state);
+    }
+
+    private class KeyValue
+    {
+        public int Key { get; set; }
+        public string Value { get; set; }
+    }
+
+    private void SetNewUserStatus(int userId)
+    {
+        int index = _users.FindIndex(x => x.Id == userId);
+        _users[index].Disabled = !_users[index].Disabled;
+        SetTempUsers();
+    }
+
+    private void SetTempUsers()
+    {
+        _tempUsers = JsonConvert.SerializeObject(_users);
+    }
+
+    private void OnValidActivitiesSubmit()
+    {
+
+    }
+
+    private bool VerifyCheckedProperty(int activityId)
+    {
+        return _userActivities.Any(x => x.ActivityId == activityId);
+    }
+
+    private bool VerifySubstituteProperty(int substituteId)
+    {
+        return _userSubstitutes.Any(x => x.SubstituteId == substituteId);
+    }
+
+    private async Task SaveUserInfo()
+    {
+        bool isValid = _editContext.Validate();
+        if (!isValid)
+        {
+            return;
+        }
+        if (SelectedUser != null)
+        {
+            if (SelectedUser.Id != default)
+            {
+                var result = await userService.UpdateUser(SelectedUser);
+                if (result.Status == ResponseStatus.Success)
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Success,
+                            Message = "The user has been updated successfully"
+                        });
+                    await SaveActivities();
+                    await SaveSubstitutes();
+                    CloseWindow();                    
+                    await GetUsers();
+                    StateHasChanged();
+                }
+                else
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Error,
+                            Message = "The user has not been updated"
+                        });
+                }
+
+
+            }
+            else
+            {
+                var result = await userService.CreateUser(SelectedUser);
+                if (result.Status == ResponseStatus.Success)
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Success,
+                            Message = "The user has been created successfully"
+                        });
+                    
+                    CloseWindow();                    
+                    await GetUsers();
+                    StateHasChanged();
+                }
+                else
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Error,
+                            Message = "The user has not been created"
+                        });
+
+                }
+            }
+        }
+
+
+    }
+
+
+
+    private void Cancel()
+    {
+        CloseWindow();
+    }
+
+    public class StatusOption
+    {
+        public string Text { get; set; }
+        public bool Value { get; set; }
+    }
+
+    List<StatusOption> StatusOptions { get; set; } = new List<StatusOption>()
+    {
+        new StatusOption() { Text = "Disabled", Value = true },
+        new StatusOption() { Text = "Enabled", Value = false }
+    };
+
+
+    private async Task SaveActivities()
+    {
+        List<UserActivityCode> newActivities = new List<UserActivityCode>();
+
+        _userActivities.ForEach(x =>
+        {
+            newActivities.Add(new UserActivityCode
+                {
+                    ActivityId = x.ActivityId,
+                    IsActivityEnabled = true,
+                    UserId = SelectedUser.Id,
+                });
+        });
+        await userActivityCodeService.UpdateUserActivities(newActivities, SelectedUser.Id);
+    }
+
+    private async Task SaveSubstitutes()
+    {
+        List<Substitute> newSubstitutes = new List<Substitute>();
+
+        _userSubstitutes.ForEach(x =>
+        {
+            newSubstitutes.Add(new Substitute
+                {
+                    UserId = SelectedUser.Id,
+                    SubstituteId = x.SubstituteId,
+                });
+        });
+        await userService.UpdateSubstitutes(newSubstitutes, SelectedUser.Id);
+    }
+
+    private void OnActivityCheckboxChanged(int activityId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            _userActivities.Add(_activities.Where(x => x.ActivityId == activityId).Select(x => new UserActivityCodeLight
+            {
+                ActivityId = x.ActivityId,
+                ActivityName = x.ActivityName,
+                ActivityCode = x.ActivityCode,
+            }).FirstOrDefault());
+        }
+        else
+        {
+            _userActivities = _userActivities.Where(x => x.ActivityId != activityId).ToList();
+        }        
+    }
+
+    private void OnSubstituteCheckboxChanged(int substituteId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            _userSubstitutes.Add(_users.Where(x => x.Id == substituteId).Select(x => new Substitute
+                {
+                    UserId = SelectedUser.Id,
+                    SubstituteId = x.Id,
+                }).FirstOrDefault());
+        }
+        else
+        {
+            _userSubstitutes = _userSubstitutes.Where(x => x.SubstituteId != substituteId).ToList();
+        }
+    }
+
+}

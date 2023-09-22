@@ -1,0 +1,665 @@
+﻿@page "/projects"
+@inject IProjectService projectService
+@inject IClientService clientService
+@inject IUserService userService
+@inject IGeneralService generalService
+@inject IComponentComunicationService notificationSrv
+@inject IJSRuntime JSRuntime
+@inject IProjectTeamUserService projectTeamUserService
+@inject NavigationManager navManager
+
+<style>
+
+    whitesmoke-tab {
+        background-color: whitesmoke;
+    }
+
+    .blue-tab {
+        background-color: deepskyblue;
+    }
+
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+
+</style>
+
+
+@if (_projects == null)
+{
+    <TelerikLoaderContainer Visible="@( _projects == null )" Text="Loading Projects..." />
+}
+else
+{
+    <h3>Projects</h3>
+
+
+    <TelerikGrid Data=@_projects
+             EditMode="@GridEditMode.Popup"
+             @ref="@GridRef"
+             Pageable="true"
+             PageSize="12"
+             Navigable="true"
+             Resizable="true"
+             Reorderable="true"
+             ConfirmDelete="true"
+             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+             OnDelete=@DeleteProject>
+        <GridToolBarTemplate>
+            <GridCommandButton Icon="@FontIcon.Plus" OnClick="@(async() => { await AddOrUpdateProject(0); })">New</GridCommandButton>
+        </GridToolBarTemplate>
+
+        <GridSettings>
+            <GridPopupEditSettings Width="800px"
+                               Height="1100px"
+                               Class="custom-popup">
+            </GridPopupEditSettings>
+            <GridPopupEditFormSettings Orientation="@FormOrientation.Horizontal"
+                                   ButtonsLayout="FormButtonsLayout.Start">
+            </GridPopupEditFormSettings>
+        </GridSettings>
+
+        <GridColumns>
+
+            <GridCommandColumn Width="30px">
+                <GridCommandButton Icon="@FontIcon.Pencil" Class="_btn _btnEdit" OnClick="@((args) => AddOrUpdateProject((args.Item as Project).Id))"></GridCommandButton>
+                <GridCommandButton Command="Delete" Icon="@FontIcon.Trash" Class="_btn red _btnDelete"></GridCommandButton>
+                <GridCommandButton Command="Save" Icon="@FontIcon.Save" ShowInEdit="true">Update</GridCommandButton>
+                <GridCommandButton Command="Cancel" Icon="@FontIcon.Cancel" ShowInEdit="true">Cancel</GridCommandButton>
+            </GridCommandColumn>
+
+            <GridColumn Field="@nameof(Project.Name)" Title="Name" Width="110px" />
+            <GridColumn Field="@nameof(Project.ProjectCode)" Title="Code" Width="90px" />
+            <GridColumn Field="@nameof(Project.ClientName)" Title="Client" Width="110px">
+                <Template>
+                    @((context as Project).ClientName)
+                </Template>
+
+                <EditorTemplate>
+                    @{
+                        <TelerikDropDownList Data="@_clients"
+                                     DefaultText="required..."
+                                     Filterable="true"
+                                     TextField=@nameof(Client.Name)
+                                     ValueField=@nameof(Client.Name)
+                                         @bind-Value="@((context as Project).ClientName)" />
+                    }
+                </EditorTemplate>
+            </GridColumn>
+
+            <GridColumn Field="@nameof(Project.ClosedStatus)" Title="Status" Width="110px">
+                <FilterCellTemplate>
+                    <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
+                    </TelerikDropDownList>
+                </FilterCellTemplate>
+                <Template>
+                    @((context as Project).ClosedStatus.Value ? "Closed" : "Open")
+                </Template>
+            </GridColumn>
+
+        </GridColumns>
+    </TelerikGrid>
+
+    <TelerikWindow @bind-Visible="_windowVisible"
+               Modal="true"
+               Width="1600px"
+               MinHeight="900px"
+               MaxHeight="900px"
+               FooterLayoutAlign="@WindowFooterLayoutAlign.End">
+        <WindowTitle>PROJECT MAINTENANCE</WindowTitle>
+        <WindowContent>
+            <TelerikTabStrip>
+                <TabStripTab Title="DETAILS" Class="whitesmoke-tab">
+                    @{
+                        <TelerikForm EditContext="_editContext" Columns="2" ColumnSpacing="30px">
+                            <FormValidation>
+                                <DataAnnotationsValidator />
+                            </FormValidation>
+
+                            <FormItems>
+                                <FormItem Field="Name" LabelText="Name" Class="required-field"></FormItem>
+                                <FormItem Field="ProjectCode" LabelText="Project Code" Class="required-field"></FormItem>
+                                <FormItem Field="EntryStartDate" LabelText="Start Date" Class="required-field" />
+                                <FormItem Field="EntryEndDate" LabelText="End Date"></FormItem>
+
+                                <FormItem Field="ClientId">
+                                    <Template>
+                                        <label for="ClientId" style="margin-right: 3px;">Client<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedProject.ClientId"
+                                                     DefaultText="Select a client"
+                                                     Filterable="true"
+                                                     Data="@_clients"
+                                                     TextField="@nameof(Client.Name)"
+                                                     ValueField="@nameof(Client.Id)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedProject.ClientId)" />
+
+                                <FormItem Field="TimeExpenseEntryType">
+                                    <Template>
+                                        <label for="TimeExpenseEntryType" style="margin-right: 3px;">Billable<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedProject.TimeExpenseEntryType"
+                                                     DefaultText="Select an option "
+                                                     Filterable="true"
+                                                     Data="@_billableList"
+                                                     TextField="@nameof(General.Value)"
+                                                     ValueField="@nameof(General.Value)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedProject.TimeExpenseEntryType)" />
+
+                                <FormItem Field="UdfProjectType">
+                                    <Template>
+                                        <label for="UdfProjectType" style="margin-right: 3px;">Project Type<span style="color: red"> *</span></label>
+                                        <TelerikDropDownList @bind-Value="@SelectedProject.UdfProjectType"
+                                                     DefaultText="Select an type"
+                                                     Filterable="true"
+                                                     Data="@_projectTypeList"
+                                                     TextField="@nameof(General.Value)"
+                                                     ValueField="@nameof(General.Value)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+                                <ValidationMessage For="@(() => SelectedProject.UdfProjectType)" />
+
+                                <FormItem Field="ClosedStatus">
+                                    <Template>
+                                        <div>
+                                            <label for="myComboBox">Status</label>
+                                        </div>
+                                        <div>
+                                            <TelerikComboBox Id="myComboBox" ClearButton="false" Data="@StatusOptions" TextField="Text" ValueField="Value" @bind-Value="@SelectedProject.ClosedStatus" />
+                                        </div>
+                                    </Template>
+                                </FormItem>
+
+                                <FormItem Field="UdfAudience">
+                                    <Template>
+                                        @{
+                                            <label for="udfGroups">Audience</label>
+                                            <TelerikDropDownList Data="@_audienceList"
+                                                     DefaultText="optional..."
+                                                     Filterable="true"
+                                                     TextField=@nameof(General.Value)
+                                                     ValueField=@nameof(General.Value)
+                                                             @bind-Value="@((EditItem as Project).UdfAudience)" />
+                                        }
+                                    </Template>
+                                </FormItem>
+
+                                <FormItem Field="udfGroups">
+                                    <Template>
+                                        <label for="udfGroups" style="margin-right: 3px;">Groups</label>
+                                        <TelerikDropDownList @bind-Value="@SelectedProject.UdfGroups"
+                                                     DefaultText="Select a group"
+                                                     Filterable="true"
+                                                     Data="@_groupsList"
+                                                     TextField="@nameof(General.Value)"
+                                                     ValueField="@nameof(General.Value)">
+                                        </TelerikDropDownList>
+                                    </Template>
+                                </FormItem>
+
+                                <FormItem Field="UdfPlpCostCenter" LabelText="Plp Cost Center"></FormItem>
+
+                            </FormItems>
+                            <FormButtons></FormButtons>
+                        </TelerikForm>
+                    }
+                </TabStripTab>
+             @if (SelectedProject.Id > 0)
+             {
+                <TabStripTab Title="MEMBERS" Class="whitesmoke-tab">
+                    @{
+                        <div>
+                            <TelerikButton Icon="@nameof(FontIcon.Plus)" OnClick="() => _teamMemberPopUp = true" >Manage Members</TelerikButton>
+                        </div>
+                        <br />
+
+                        @if (_projectTeamMembers != null && _projectTeamMembers.Any())
+                        {                            
+                              <ul>
+                                @foreach (var teamMember in _projectTeamMembers)
+                                {
+
+                                    <div style="display: flex; align-items: center;">
+                                        <div style="width: 100%;font-size: medium ; color: blue;">
+                                            @teamMember.UserName
+                                        </div>
+                                    </div>
+
+                                    <hr style="border: 0.5px solid lightgray;" />
+                                }
+                              </ul>                            
+                        }
+                        else
+                        {
+                            <div style="min-height: 900px;">
+                                <p>No team members have been selected yet.</p>
+                            </div>
+                        } 
+                    }
+                </TabStripTab>
+             }
+            </TelerikTabStrip>
+
+        </WindowContent>
+        <WindowFooter>
+            <TelerikButton OnClick="SaveProjectInfo" Title="Saving" Icon="@nameof(FontIcon.Save)" Class="colorbutton">Save</TelerikButton>
+            <TelerikButton OnClick="Cancel" Icon="@nameof(FontIcon.Cancel)" ButtonType="@ButtonType.Button" Class="colorcancel">
+                Cancel
+            </TelerikButton>
+        </WindowFooter>
+    </TelerikWindow>
+
+    <TelerikWindow @bind-Visible="_teamMemberPopUp"
+               Modal="true"
+               Width="1600px"
+               MinHeight="900px"
+               MaxHeight="900px"                
+               FooterLayoutAlign="@WindowFooterLayoutAlign.End">
+        <WindowTitle>Team Members</WindowTitle>
+        <WindowContent>
+            <div class="row">
+                @foreach (var user in _users)
+                {
+                    <div class="col-2" style="font-size: medium; padding-bottom:20px;">
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 50%;">
+                                <TelerikCheckBox Value="@(VerifyCheckedProperty(user.Id))"
+                                     TValue="bool"
+                                     Id="@user.Id.ToString()"
+                                     Class="user">
+                                </TelerikCheckBox>
+                            </div>
+                            <div style="width: 100%; font-size: medium;">
+                                @user.Username
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </WindowContent>
+        <WindowFooter>
+            <TelerikButton OnClick="SaveProjectTeamMembers" Icon="@nameof(FontIcon.Save)" ButtonType="@ButtonType.Button" Class="colorbutton">
+                Save
+            </TelerikButton>
+            <TelerikButton OnClick="CancelSecondary" Icon="@nameof(FontIcon.Cancel)" ButtonType="@ButtonType.Button" Class="colorcancel">
+                Cancel
+            </TelerikButton>
+        </WindowFooter>
+    </TelerikWindow>
+
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    public Project SelectedProject { get; set; }
+    private bool _windowVisible = false;
+    private bool _teamMemberPopUp = false;
+    private List<Project> _projects = null;
+    private List<Client> _clients = new List<Client>();
+    private List<General> _billableList = new List<General>();
+    private List<General> _projectTypeList = new List<General>();
+    private List<General> _audienceList = new List<General>();
+    private List<General> _groupsList = new List<General>();
+    private List<User> _users = null;
+    private List<ProjectTeamUser> _projectTeamMembers = new List<ProjectTeamUser>();
+
+    private EditContext _editContext;
+    private string _tempProjects;
+    public Project EditItem { get; set; }
+    public TelerikGrid<Project> GridRef { get; set; }
+
+    private string _tempUsers;
+    public User SelectedUser { get; set; }
+    private int selectedValue = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetProjects();
+        await GetClients();
+        await GetBillableList();
+        await GetProjectTypeList();
+        await GetAudienceList();
+        await GetGroupsList();
+        await GetUsers();
+
+    }
+
+    private async Task GetProjects()
+    {
+        var response = await projectService.GetProjects(null);
+        _projects = response.Data.ToList();
+        SetTempProjects();
+    }
+
+    private async Task GetUsers()
+    {
+        var response = await userService.GetUsers(false);
+        _users = response.Data.OrderBy(x => x.Username).ToList();
+
+        SetTempUsers();
+    }
+
+    private async Task GetProjectTeamMembers(int projectId)
+    {
+        _projectTeamMembers = (await projectTeamUserService.GetProjectTeamMembers(projectId)).Data.ToList();
+    }
+
+    private void SetTempUsers()
+    {
+        _tempUsers = JsonConvert.SerializeObject(_users);
+    }
+
+    private async Task GetClients()
+    {
+        _clients = (await clientService.GetClients(false)).Data.ToList();
+    }
+
+    private async Task GetBillableList()
+    {
+        _billableList = (await generalService.GetGeneralValues("BillingStatus")).Data.ToList();
+    }
+
+    private async Task GetProjectTypeList()
+    {
+        _projectTypeList = (await generalService.GetGeneralValues("ProjectType")).Data.ToList();
+    }
+
+    private async Task GetAudienceList()
+    {
+        _audienceList = (await generalService.GetGeneralValues("Audience")).Data.ToList();
+    }
+
+    private async Task GetGroupsList()
+    {
+        _groupsList = (await generalService.GetGeneralValues("CompanyGroup")).Data.ToList();
+    }
+
+    public async Task DeleteProject(GridCommandEventArgs args)
+    {
+        ApiResponse<bool> response = await projectService.DeleteProject(((Project)args.Item).Id);
+        if (response.Status == ResponseStatus.Success)
+        {
+            if (!response.Data)
+            {
+                notificationSrv.SendNotification(new Notification
+                    {
+                        NotificationType = NotificationType.Warning,
+                        Message = "The Project cannot be deleted as it does have records on it."
+                    });
+
+                return;
+            }
+            _projects.Remove((Project)args.Item);
+            SetTempProjects();
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Success,
+                    Message = "The Project was deleted successfully"
+                });
+        }
+        else
+        {
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Error,
+                    Message = "The Project was not deleted"
+                });
+        }
+    }
+    private void SetTempProjects()
+    {
+        _tempProjects = JsonConvert.SerializeObject(_projects);
+    }
+
+    //private async Task OnValidSubmit()
+    //{
+    //    if (EditItem.Id != default)
+    //    {
+    //        ApiResponse<bool> result = await projectService.UpdateProject(EditItem);
+    //        if (result.Status == ResponseStatus.Success)
+    //        {
+    //            notificationSrv.SendNotification(new Notification
+    //                {
+    //                    NotificationType = NotificationType.Success,
+    //                    Message = "The project has been updated successfully"
+    //                });
+    //        }
+    //    }
+    //    else
+    //    {
+    //        ApiResponse<bool> result = await projectService.CreateProject(EditItem);
+    //        if (result.Status == ResponseStatus.Success)
+    //        {
+    //            notificationSrv.SendNotification(new Notification
+    //                {
+    //                    NotificationType = NotificationType.Success,
+    //                    Message = "The project has been created successfully"
+    //                });
+    //        }
+    //    }
+
+    //    await ExitEditAsync();
+    //    await GetProjects();
+    //    StateHasChanged();
+    //}
+
+    private async Task SaveProjectInfo()
+    {
+        bool isValid = _editContext.Validate();
+        if (!isValid)
+        {
+            return;
+        }
+        if (SelectedProject != null)
+        {
+            if (SelectedProject.Id != default)
+            {
+                var result = await projectService.UpdateProject(SelectedProject);
+                if (result.Status == ResponseStatus.Success)
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Success,
+                            Message = "The project has been updated successfully"
+                        });
+                }
+                else
+                {
+
+
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Error,
+                            Message = "The project has not been updated"
+                        });
+
+                }
+
+            }
+            else
+            {
+                var result = await projectService.CreateProject(SelectedProject);
+                if (result.Status == ResponseStatus.Success)
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Success,
+                            Message = "The project has been created successfully"
+                        });
+                }
+                else
+                {
+                    notificationSrv.SendNotification(new Notification
+                        {
+                            NotificationType = NotificationType.Error,
+                            Message = "The project has not been created"
+                        });
+
+                }
+            }
+        }
+
+        
+        CloseWindow();
+        await ExitEditAsync();
+        await GetProjects();
+        StateHasChanged();
+
+    }
+
+    private async Task OnCancel()
+    {
+        await ExitEditAsync();
+    }
+
+    private async Task ExitEditAsync()
+    {
+        var state = GridRef?.GetState();
+        state.OriginalEditItem = null;
+        state.EditItem = null;
+        state.InsertedItem = null;
+
+        await GridRef?.SetStateAsync(state);
+    }
+
+    private void SetNewProjectStatus(int Id)
+    {
+        int index = _projects.FindIndex(x => x.Id == Id);
+        SetTempProjects();
+    }
+
+
+    private void FilterTable(object item)
+    {
+        var projects = JsonConvert.DeserializeObject<IEnumerable<Project>>(_tempProjects);
+
+        switch (item)
+        {
+            case 0:
+                _projects = projects.ToList();
+                break;
+            case 1:
+                _projects = projects.Where(x => x.ClosedStatus.Value).ToList();
+                break;
+            case 2:
+                _projects = projects.Where(x => !x.ClosedStatus.Value).ToList();
+                break;
+            default:
+                _projects = projects.ToList();
+                break;
+        }
+    }
+
+    List<StatusOption> StatusOptions { get; set; } = new List<StatusOption>()
+    {
+        new StatusOption() { Text = "Closed", Value = true },
+        new StatusOption() { Text = "Open", Value = false }
+    };
+
+    public class StatusOption
+    {
+        public string Text { get; set; }
+        public bool Value { get; set; }
+    }
+
+    private List<KeyValue> _customFilterData = new List<KeyValue>
+    {
+        new KeyValue { Key = 0, Value = "All" },
+        new KeyValue { Key = 1, Value = "Closed" },
+        new KeyValue { Key = 2, Value = "Open" },
+    };
+
+
+
+    private class KeyValue
+    {
+        public int Key { get; set; }
+        public string Value { get; set; }
+    }
+
+    private async Task AddOrUpdateProject(int Id)
+    {
+        SelectedProject = Id > 0
+            ? _projects.FirstOrDefault(x => x.Id == Id)
+            : new Project();
+        _editContext = new EditContext(SelectedProject);
+
+        if  (SelectedProject.Id > 0)
+        {
+            await GetProjectTeamMembers(Id);
+        }
+
+        OpenWindow();
+    }
+
+
+    private void Cancel()
+    {
+        CloseWindow();
+    }
+
+
+    private void OpenWindow()
+    {
+        _windowVisible = true;
+    }
+
+    private void CloseWindow()
+    {
+        _windowVisible = false;
+    }
+
+    private void CancelSecondary()
+    {
+        CloseWindowSecondary();
+    }
+
+    private void CloseWindowSecondary()
+    {
+        _teamMemberPopUp = false;
+    }
+    private bool VerifyCheckedProperty(int userId)
+    {
+        return _projectTeamMembers.Any(x => x.UserId == userId);
+    }
+
+    private async Task SaveProjectTeamMembers()
+    {
+        List<int> usersId = await JSRuntime.InvokeAsync<List<int>>("getAllCheckedUsers");
+        await projectTeamUserService.AddProjectTeamMembers(SelectedProject.Id, usersId);
+        
+        CloseWindowSecondary();
+        await GetProjectTeamMembers(SelectedProject.Id);
+        StateHasChanged();        
+    }
+
+}

@@ -1,0 +1,119 @@
+﻿{
+   "CodeGenerationMode": 2,
+   "ContextClassName": "TimesheetContext",
+   "ContextNamespace": null,
+   "DefaultDacpacSchema": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "ModelNamespace": null,
+   "OutputContextPath": "Repositories\/EF_Implementations",
+   "OutputPath": "Models",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "Timesheet.Api",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[Activity]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Approvals]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ApprovalStatus]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Client]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CostCenter]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Department]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[EmployeeType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[General]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ParentDepartment]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Project]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProjectHasUser]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RP_TimeSheetData]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Substitute]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TimeOff]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TimesheetControl]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TimesheetType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TranslationMappings_ActivityGrouping]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[User]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserActivityCode]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserSelectAct]",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": "WDB3.cosmosgu_timesheet",
+   "UncountableWords": null,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDateOnlyTimeOnly": false,
+   "UseDbContextSplitting": false,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false
+}

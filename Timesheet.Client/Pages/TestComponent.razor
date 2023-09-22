@@ -1,0 +1,19 @@
+﻿@page "/test"
+
+<TelerikTabStrip @bind-ActiveTabIndex="@ActiveTabIndex">
+    <TabStripTab Title="Sofia">
+        <h1>Tab 1</h1>
+    </TabStripTab>
+    <TabStripTab Title="London">
+        <h1>Tab 2</h1>
+    </TabStripTab>
+    <TabStripTab Title="Paris">
+        <h1>Tab 3</h1>
+    </TabStripTab>
+</TelerikTabStrip>
+
+<h2>Active Tab Index: @ActiveTabIndex </h2>
+
+@code {
+    public int ActiveTabIndex { get; set; } = 1;
+}

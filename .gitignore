@@ -1,0 +1,8 @@
+.vs/
+.vscode/
+/Timesheet.Api/bin/
+/Timesheet.Api/obj/
+/Timesheet.Client/bin/
+/Timesheet.Client/obj/
+/Timesheet.Shared/bin/
+/Timesheet.Shared/obj/

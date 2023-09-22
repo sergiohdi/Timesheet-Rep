@@ -1,0 +1,39 @@
+﻿.controls {
+    display:flex;
+    gap: 15px;
+}
+
+.control {
+    width: 20%;
+}
+
+.control > label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.approve-button {
+    width: 20%;
+    text-align: right;
+}
+
+.grid-container {
+    margin-top: 5px;
+    max-height: 700px;
+    overflow: scroll;
+}
+
+::deep .k-picker-sm {
+    font-size: 0.82rem;
+}
+
+.grid-actions {
+    height: 50px;
+    padding-top: 10px;
+}
+
+@media only screen and (min-width: 2030px) {
+    .approve-button {
+        width: 80%;
+    }
+}

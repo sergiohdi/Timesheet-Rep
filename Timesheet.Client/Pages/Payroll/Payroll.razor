@@ -1,0 +1,123 @@
+﻿@page "/payroll"
+
+@inject ITimesheetControlService timesheetControlService
+@inject IComponentComunicationService notificationSrv
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .center-checkbox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+</style>
+
+@if (_timesheets == null)
+{
+    <TelerikLoaderContainer Visible="@( _timesheets == null )" Text="Loading timesheets..." />
+}
+else
+{
+    <h3>Payroll</h3>
+
+    <TelerikGrid Data=@_timesheets
+             EditMode="@GridEditMode.Inline"
+             @ref="@GridRef"
+             Pageable="true"
+             PageSize="12"
+             Navigable="true"
+             ConfirmDelete="true"
+             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow">
+        <GridToolBarTemplate>
+            <TelerikButton OnClick="@ApproveSelected">Approve</TelerikButton>
+        </GridToolBarTemplate>
+        <GridSettings>
+            <GridPopupEditSettings MaxWidth="1800px"
+                               MaxHeight="1200px"
+                               Class="custom-popup">
+            </GridPopupEditSettings>
+            <GridPopupEditFormSettings Orientation="@FormOrientation.Horizontal"
+                                   ButtonsLayout="FormButtonsLayout.Start">
+            </GridPopupEditFormSettings>
+        </GridSettings>
+
+        <GridColumns>
+
+            <GridCommandColumn Width="15px">
+               
+                @{
+                    var currentTimesheet = context as TimesheetControl;
+                    <div class="center-checkbox">
+                    <TelerikCheckBox @bind-Value="currentTimesheet.IsSelected"></TelerikCheckBox>
+                    </div>
+                }
+
+            </GridCommandColumn>
+
+            <GridColumn Field="@nameof(TimesheetControl.TimesheetPeriod)" Title="Timesheet Period" Width="140px" />
+            <GridColumn Field="@nameof(TimesheetControl.UserId)" Title="User" Width="140px" />
+            <GridColumn Field="@nameof(TimesheetControl.ApprovalStatusId)" Title="Approval Status" Width="100px" />
+
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    public List<TimesheetControl> _timesheets = null;
+
+    public TelerikGrid<TimesheetControl> GridRef { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetTimesheetControl();
+    }
+
+    private async Task GetTimesheetControl()
+    {
+        _timesheets = (await timesheetControlService.GetTimesheetControl()).Data.ToList();
+    }
+
+    private async Task ApproveSelected()
+    {
+        List<int> selectedTimesheets = _timesheets.Where(t => t.IsSelected).Select(x => x.TimesheetPeriodId).ToList();
+
+        if (selectedTimesheets.Any())
+        {
+            var response = await timesheetControlService.UpdateApprovalStatus(selectedTimesheets);
+
+            await GetTimesheetControl();
+            StateHasChanged();
+        }
+
+
+    }
+} 
+

@@ -1,0 +1,180 @@
+﻿@page "/clients"
+
+@inject IClientService clientSrv
+@inject IComponentComunicationService notificationSrv
+@inject NavigationManager navManager
+
+@if (_clients == null)
+{
+    <TelerikLoaderContainer Visible="@( _clients == null )" Text="Loading Clients..." />
+}
+else
+{
+    <h3>Clients</h3>
+
+@*    <div class="jumbotron filter">
+        <div class="filter-cell">
+
+            <label>Status:</label>
+            <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
+            </TelerikDropDownList>
+        </div>
+    </div>*@
+
+    <TelerikGrid Data=@_clients
+             Pageable="true"
+             Navigable="true"
+             PageSize="12"
+             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+             ConfirmDelete="true"
+             OnDelete=@DeleteClient>
+        <GridToolBarTemplate>
+            <GridCommandButton Command="Add" Icon="@FontIcon.Plus" OnClick="@(() => ClientMaintenance(null))">New</GridCommandButton>
+        </GridToolBarTemplate>
+        <GridColumns>
+            <GridCommandColumn Width="30px">
+                <GridCommandButton Command="Edit" Icon="@FontIcon.Pencil" Class="_btn _btnEdit" OnClick="@((args) => ClientMaintenance(args.Item as Client))"></GridCommandButton>
+                <GridCommandButton Command="Delete" Icon="@FontIcon.Trash" Class="_btn red _btnDelete"></GridCommandButton>
+            </GridCommandColumn>
+            <GridColumn Field="@nameof(Client.Name)" Title="Name" Width="195px" />
+            <GridColumn Field="@nameof(Client.Code)" Title="Code" Width="120px" />
+            <GridColumn Field="@nameof(Client.Disabled)" Title="Status" Width="120px">
+                <FilterCellTemplate>
+                    <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
+                    </TelerikDropDownList>
+                </FilterCellTemplate>
+                <Template>
+                    @((context as Client).Disabled.Value ? "Disabled" : "Enabled")
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    private List<Client> _clients = null;
+    private string _tempClients;
+    private List<KeyValue> _customFilterData = new List<KeyValue>
+    {
+        new KeyValue { Key = 0, Value = "All" },
+        new KeyValue { Key = 1, Value = "Disabled" },
+        new KeyValue { Key = 2, Value = "Enabled" },
+    };
+    private int selectedValue = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClients();
+    }
+
+    public void ClientMaintenance(Client client)
+    {
+        string route = client != null ? $"/clients/maintenance/{client.Id}" : "/clients/maintenance";
+        navManager.NavigateTo(route);
+    }
+
+    public async Task DeleteClient(GridCommandEventArgs args)
+    {
+        ApiResponse<bool> response = await clientSrv.DeleteClient(((Client)args.Item).Id);
+        if (response.Status == ResponseStatus.Success)
+        {
+            if (!response.Data)
+            {
+                notificationSrv.SendNotification(new Notification
+                    {
+                        NotificationType = NotificationType.Warning,
+                        Message = "The Client cannot be deleted as it does have projects on it."
+                    });
+
+                return;
+            }
+            _clients.Remove((Client)args.Item);
+            SetTempClients();
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Success,
+                    Message = "The client was deleted successfully"
+                });
+        }
+        else
+        {
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Error,
+                    Message = "The client was not deleted"
+                });
+        }
+    }
+
+    private async Task GetClients()
+    {
+        var response = await clientSrv.GetClients(null);
+        _clients = response.Data.ToList();
+        SetTempClients();
+    }
+
+    private void FilterTable(object item)
+    {
+        var clients = JsonConvert.DeserializeObject<IEnumerable<Client>>(_tempClients);
+
+        switch (item)
+        {
+            case 0:
+                _clients = clients.ToList();
+                break;
+            case 1:
+                _clients = clients.Where(x => x.Disabled.Value).ToList();
+                break;
+            case 2:
+                _clients = clients.Where(x => !x.Disabled.Value).ToList();
+                break;
+            default:
+                _clients = clients.ToList();
+                break;
+        }
+    }
+
+    private async Task ConfirmAction(Client client)
+    {
+        string confirmMessage = client.Disabled.Value ? "Are you sure to enable this client?" : "Are you sure to disable this client?";
+        bool confirmed = await Dialogs.ConfirmAsync(confirmMessage, "Client");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        bool result = (await clientSrv.DeleteClient(client.Id)).Data;
+
+        if (result)
+        {
+            SetNewClientStatus(client.Id);
+            string message = client.Disabled.Value ? "The client was disabled successfully" : "The client was enabled successfully";
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Success,
+                    Message = message
+                });
+        }
+    }
+
+    private void SetNewClientStatus(int clientId)
+    {
+        int index = _clients.FindIndex(x => x.Id == clientId);
+        _clients[index].Disabled = !_clients[index].Disabled;
+        SetTempClients();
+    }
+
+    private void SetTempClients()
+    {
+        _tempClients = JsonConvert.SerializeObject(_clients);
+    }
+
+    private class KeyValue
+    {
+        public int Key { get; set; }
+        public string Value { get; set; }
+    }
+}

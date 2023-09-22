@@ -1,0 +1,27 @@
+﻿@page "/team"
+
+@inject IComponentComunicationService notificationSrv
+@inject IApprovalService approvalService
+
+
+
+@code {
+    private int _tempSuperv = 8;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetRegularTimeRequests();
+    }
+
+    private async Task GetRegularTimeRequests()
+    {
+        // Todo get regular time requests
+    }
+
+    private async Task ApproveSelected()
+    {
+        // Todo implement Supervisor Approval
+    }
+}
+
+

@@ -1,0 +1,331 @@
+﻿@page "/departments"
+
+@inject IDepartmentService departmentService
+@inject IParentDepartmentService parentDepartmentService
+@inject IGeneralService generalService
+@inject ICostCenterService costCenterService
+@inject IComponentComunicationService notificationSrv
+@inject NavigationManager navManager
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+</style>
+
+@if (_departments == null)
+{
+    <TelerikLoaderContainer Visible="@( _departments == null )" Text="Loading departments..." />
+}
+else
+{
+    <h3>Departments</h3>
+
+
+    <TelerikGrid Data=@_departments
+             EditMode="@GridEditMode.Popup"
+             @ref="@GridRef"
+             Pageable="true"
+             PageSize="12"
+             Navigable="true"
+             ConfirmDelete="true"
+             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+             OnDelete=@DeleteDepartment>
+        <GridToolBarTemplate>
+            <GridCommandButton Command="Add" Icon="@FontIcon.Plus">New</GridCommandButton>
+        </GridToolBarTemplate>
+        <GridSettings>
+            <GridPopupEditSettings MaxWidth="1800px"
+                               MaxHeight="1200px"
+                               Class="custom-popup">
+            </GridPopupEditSettings>
+            <GridPopupEditFormSettings Orientation="@FormOrientation.Horizontal"
+                                   ButtonsLayout="FormButtonsLayout.Start">
+                <FormTemplate>
+                    @{
+                        EditItem = context.Item as Department;
+
+                        <TelerikForm Model="EditItem" OnValidSubmit="@OnValidSubmit" Columns="2" ColumnSpacing="10px" Class="my-form">
+                            <FormValidation>
+                                <DataAnnotationsValidator />
+                            </FormValidation>
+                            <FormItems>
+                                <FormItem Field="Name" LabelText="Name" Class="required-field"></FormItem>
+                                <FormItem Field="Code" LabelText="Department Code"></FormItem>
+
+                                <FormItem Field="ParentId">
+                                    <Template>
+                                        @{
+                                            <label for="ParentId">Parent Company</label>
+                                            <TelerikDropDownList Data="@_parentList"
+                                                     DefaultText="optional..."
+                                                     Filterable="true"
+                                                     TextField=@nameof(ParentDepartment.Name)
+                                                     ValueField=@nameof(ParentDepartment.Id)
+                                                             @bind-Value="@((EditItem as Department).ParentId)" />
+                                        }
+                                    </Template>
+                                </FormItem>
+
+                                <FormItem Field="CostCenterGroup">
+                                    <Template>
+                                        @{
+                                            <label for="CostCenterGroup">Cost Center</label>
+                                            <TelerikDropDownList Data="@_costCenterList"
+                                                     DefaultText="optional..."
+                                                     Filterable="true"
+                                                     TextField=@nameof(CostCenter.Costcentername)
+                                                     ValueField=@nameof(CostCenter.Costcentername)
+                                                             @bind-Value="@((EditItem as Department).CostCenterGroup)" />
+                                        }
+                                    </Template>
+                                </FormItem>
+
+                                <FormItem Field="DisabledSetting">
+                                    <Template>
+                                        <div>
+                                            <label for="myComboBox">Status</label>
+                                        </div>
+                                        <div>
+                                            <TelerikComboBox Id="myComboBox" Data="@StatusOptions" ClearButton="false" TextField="Text" ValueField="Value" @bind-Value="@EditItem.DisabledSetting" />
+                                        </div>
+                                    </Template>
+                                </FormItem>
+
+
+                            </FormItems>
+                            <FormButtons>
+                                <TelerikButton Icon="@nameof(FontIcon.Save)" Class="colorbutton">Save</TelerikButton>
+                                <TelerikButton Icon="@nameof(FontIcon.Cancel)" ButtonType="@ButtonType.Button" Class="colorcancel" OnClick="@OnCancel">Cancel</TelerikButton>
+                            </FormButtons>
+                        </TelerikForm>
+                    }
+                </FormTemplate>
+
+
+
+            </GridPopupEditFormSettings>
+        </GridSettings>
+
+        <GridColumns>
+
+            <GridCommandColumn Width="30px">
+                <GridCommandButton Command="Edit" Icon="@FontIcon.Pencil" Class="_btn _btnEdit"></GridCommandButton>
+                <GridCommandButton Command="Delete" Icon="@FontIcon.Trash" Class="_btn red _btnDelete"></GridCommandButton>
+                <GridCommandButton Command="Save" Icon="@FontIcon.Save" ShowInEdit="true">Update</GridCommandButton>
+                <GridCommandButton Command="Cancel" Icon="@FontIcon.Cancel" ShowInEdit="true">Cancel</GridCommandButton>
+            </GridCommandColumn>
+
+            <GridColumn Field="@nameof(Department.Name)" Title="Name" Width="140px" />
+            <GridColumn Field="@nameof(Department.Code)" Title="Code" Width="140px" />
+            <GridColumn Field="@nameof(Department.DisabledSetting)" Title="Status" Width="100px">
+                <FilterCellTemplate>
+                    <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
+                    </TelerikDropDownList>
+                </FilterCellTemplate>
+                <Template>
+                    @((context as Department).DisabledSetting.Value ? "Disabled" : "Enabled")
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    public List<Department> _departments = null;
+    public Department EditItem { get; set; }
+    private List<ParentDepartment> _parentList = new List<ParentDepartment>();
+    private List<CostCenter> _costCenterList = new List<CostCenter>();
+    public TelerikGrid<Department> GridRef { get; set; }
+
+    private string _tempDepartments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDepartments();
+        await GetParentList();
+        await GetCostCenterList();
+
+        SetTempdepartments();
+    }
+
+    private async Task GetDepartments()
+    {
+        _departments = (await departmentService.GetDepartments(false)).Data.ToList();
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (EditItem.Id != default)
+        {
+            ApiResponse<bool> result = await departmentService.UpdateDepartment(EditItem);
+            if (result.Status == ResponseStatus.Success)
+            {
+                notificationSrv.SendNotification(new Notification
+                    {
+                        NotificationType = NotificationType.Success,
+                        Message = "The Department has been updated successfully"
+                    });
+            }
+        }
+        else
+        {
+            ApiResponse<bool> result = await departmentService.CreateDepartment(EditItem);
+            if (result.Status == ResponseStatus.Success)
+            {
+                notificationSrv.SendNotification(new Notification
+                    {
+                        NotificationType = NotificationType.Success,
+                        Message = "The Department has been created successfully"
+                    });
+            }
+        }
+
+        await ExitEditAsync();
+        await GetDepartments();
+        StateHasChanged();
+    }
+
+    public async Task DeleteDepartment(GridCommandEventArgs args)
+    {
+        ApiResponse<bool> response = await departmentService.DeleteDepartment(((Department)args.Item).Id);
+
+        if (response.Status == ResponseStatus.Success)
+        {
+            if (!response.Data)
+            {
+                notificationSrv.SendNotification(new Notification
+                    {
+                        NotificationType = ThemeConstants.Notification.ThemeColor.Warning,
+                        Message = "The Department cannot be deleted as it does have records on the Database."
+                    });
+
+                return;
+            }
+            _departments.Remove((Department)args.Item);
+            SetTempdepartments();
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = ThemeConstants.Notification.ThemeColor.Success,
+                    Message = "The Department was deleted successfully"
+                });
+        }
+        else
+        {
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Error,
+                    Message = "The Department was not deleted"
+                });
+        }
+    }
+    private void SetTempdepartments()
+    {
+        _tempDepartments = JsonConvert.SerializeObject(_departments);
+    }
+
+    private async Task OnCancel()
+    {
+        await ExitEditAsync();
+    }
+
+    private async Task ExitEditAsync()
+    {
+        var state = GridRef?.GetState();
+        state.OriginalEditItem = null;
+        state.EditItem = null;
+        state.InsertedItem = null;
+
+        await GridRef?.SetStateAsync(state);
+    }
+
+    List<StatusOption> StatusOptions { get; set; } = new List<StatusOption>()
+    {
+        new StatusOption() { Text = "Disabled", Value = true },
+        new StatusOption() { Text = "Enabled", Value = false }
+    };
+
+
+    public class StatusOption
+    {
+        public string Text { get; set; }
+        public bool Value { get; set; }
+    }
+
+    private class KeyValue
+    {
+        public int Key { get; set; }
+        public string Value { get; set; }
+    }
+
+    private List<KeyValue> _customFilterData = new List<KeyValue>
+    {
+        new KeyValue { Key = 0, Value = "All" },
+        new KeyValue { Key = 1, Value = "Disabled" },
+        new KeyValue { Key = 2, Value = "Enabled" },
+    };
+
+    private async Task GetParentList()
+    {
+        _parentList = (await parentDepartmentService.GetParentDepartments()).Data.ToList();
+    }
+
+    private async Task GetCostCenterList()
+    {
+        _costCenterList = (await costCenterService.GetCostCenters(false)).Data.ToList();
+    }
+
+
+    private int selectedValue = 0;
+
+    private void FilterTable(object item)
+    {
+        var departments = JsonConvert.DeserializeObject<IEnumerable<Department>>(_tempDepartments);
+
+        switch (item)
+        {
+            case 0:
+                _departments = departments.ToList();
+                break;
+            case 1:
+                _departments = departments.Where(x => x.DisabledSetting.Value).ToList();
+                break;
+            case 2:
+                _departments = departments.Where(x => !x.DisabledSetting.Value).ToList();
+                break;
+            default:
+                _departments = departments.ToList();
+                break;
+        }
+    }
+
+
+
+}
+
+
+
+

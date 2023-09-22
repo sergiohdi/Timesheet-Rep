@@ -1,0 +1,163 @@
+﻿@page "/timesheet"
+
+@inject IComponentComunicationService comunicationSrv
+@implements IDisposable
+
+<style>
+    /*At the moment is the only way to change kendo-dropdown's font-size property*/
+    /* .k-list-sm {
+        font-size: 2rem;
+    } */
+    /* label {
+        font-size: 0.8rem;
+    } */
+</style>
+
+@*Pass month, year and period as data on appsettings*@
+<div class="custom-container">
+    <div class="controls">
+        <div class="control">
+            <label>Year</label>
+            <TelerikDropDownList Data="@_years"
+                                 @bind-Value="@_selectedYear"
+                                 TextField="Text"
+                                 ValueField="Value"
+                                 Size="@ThemeConstants.DropDownList.Size.Small"
+                                 Width="76%">
+            </TelerikDropDownList>
+        </div>
+        <div class="control">
+            <label>Month</label>
+            <TelerikDropDownList Data="@_months"
+                                 @bind-Value="@_selectedMonth"
+                                 TextField="Text"
+                                 ValueField="Value"
+                                 Size="@ThemeConstants.DropDownList.Size.Small"
+                                 Width="75%"
+                                 OnChange="@CalculateYears"
+                                 Id="months">
+            </TelerikDropDownList>
+        </div>
+        <div class="control">
+            <label>Period</label>
+            <TelerikDropDownList Data="@_periods"
+                                 @bind-Value="@_selectedPeriod"
+                                 TextField="Text"
+                                 ValueField="Value"
+                                 Size="@ThemeConstants.DropDownList.Size.Small"
+                                 Width="74%"
+                                 Id="period">
+            </TelerikDropDownList>
+        </div>
+        <div class="control search">
+            <button class="btn btn-info" title="Search" @onclick="ChangePeriod">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        <div class="approve-button">
+            <button class="btn btn-primary" title="Send to approve">
+                <i class="far fa-thumbs-up"></i>
+            </button>
+        </div>
+    </div>
+    <div class="grid-actions">
+        <button class="btn btn-primary btn-sm" @onclick=AddNewRegularRecord>Add Regular Time</button>
+        <button class="btn btn-primary btn-sm" @onclick=OpenTimeOffPopUp>Add Time Off</button>
+    </div>
+    <div class="grid-container">
+        <TimeGrid Year="_selectedYear" Month="_selectedMonth" Period="_selectedPeriod" @ref="timesheet"></TimeGrid>
+    </div>
+</div>
+
+@code {
+    private List<ListType> _months;
+    private List<ListType> _years;
+    private List<ListType> _periods;
+    private int? _selectedMonth = DateTime.Now.Month;
+    private int? _selectedYear = DateTime.Now.Year;
+    private int? _selectedPeriod;
+    //private int? _selectedMonth = 4;
+    //private int? _selectedYear = 2020;
+    //private int? _selectedPeriod = 1;
+    private TimeGrid timesheet;
+
+    protected override void OnInitialized()
+    {
+        comunicationSrv.SendChangeWidth(true);
+        SetDropDownValues();
+    }
+
+    public void Dispose()
+    {
+        comunicationSrv.SendChangeWidth(false);
+    }
+
+    private void SetDropDownValues()
+    {
+        DateTime currentDate = DateTime.Now;
+
+        _months = new List<ListType>
+        {
+            new ListType { Value = null, Text = "Select..." },
+            new ListType { Value = 1, Text = "January" },
+            new ListType { Value = 2, Text = "February" },
+            new ListType { Value = 3, Text = "March" },
+            new ListType { Value = 4, Text = "April" },
+            new ListType { Value = 5, Text = "May" },
+            new ListType { Value = 6, Text = "June" },
+            new ListType { Value = 7, Text = "July" },
+            new ListType { Value = 8, Text = "August" },
+            new ListType { Value = 9, Text = "September" },
+            new ListType { Value = 10, Text = "October" },
+            new ListType { Value = 11, Text = "November" },
+            new ListType { Value = 12, Text = "December" }
+        };
+
+        int initialYear = (currentDate.Year - 10);
+        _years = new List<ListType>
+        {
+            new ListType { Value = null, Text = "Select..." },
+        };
+        for (int i = 1; i <= 10; i++)
+        {
+            int nextYear = initialYear + i;
+            _years.Add(new ListType { Value = nextYear, Text = nextYear.ToString() });
+        }
+
+        _periods = new List<ListType>
+        {
+            new ListType { Value = null, Text = "Select..." },
+            new ListType { Value = 1, Text = "1" },
+            new ListType { Value = 2, Text = "2" }
+        };
+
+        _selectedPeriod = currentDate.Day > 15 ? 2 : 1;
+    }
+
+    private void CalculateYears(object value)
+    {
+        int futureYear = (DateTime.Now.Year + 1);
+        ListType nextYear = new ListType { Value = futureYear, Text = futureYear.ToString() };
+        _years = _years.Where(x => x.Value != futureYear).ToList();
+
+        if ((int)value == 1)
+        {
+            _years.Add(nextYear);
+        }
+    }
+
+    private async Task ChangePeriod()
+    {
+        await timesheet.CalculateNewPeriod();
+    }
+
+    private void AddNewRegularRecord()
+    {
+        timesheet.AddNewRegularTimeRecord();   
+    }
+
+    private void OpenTimeOffPopUp()
+    {
+        timesheet.OpenTimeOffPopUp();
+    }
+}

@@ -1,0 +1,208 @@
+﻿@page "/clients/maintenance"
+@page "/clients/maintenance/{Id:int}"
+
+@inject IGeneralService generalService
+@inject IClientService clientService
+@inject IComponentComunicationService notificationSrv
+@inject NavigationManager navManager
+@inject IClientService clientSrv
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        color: #ffffff;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+</style>
+
+<h3>Client</h3>
+
+<EditForm Model="Client" OnValidSubmit="AddNewClient">
+    <DataAnnotationsValidator />
+    <div class="main-container">
+        <div class="form-row">
+            <div class="col-3">
+                <h3 align="left">@clientProcess</h3>
+            </div>
+            <div class="col-3">
+            </div>
+            <div class="col-3">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-3">
+                <label for="Name" style="margin-right: 3px;">Name<span style="color: red"> *</span></label>
+                <input type="text" class="form-control" @bind-value="Client.Name" />
+                <ValidationMessage For="@(() => Client.Name)" />
+            </div>
+            <div class="col-3">
+                <label>Code <span class="mandatory">*</span></label>
+                <input type="text" class="form-control" @bind-value="Client.Code" />
+                <ValidationMessage For="@(() => Client.Code)" />
+            </div>
+
+            <div class="col-3">
+                <label>Status</label>
+                <br />
+                <InputSelect @bind-Value="Client.Disabled" style="width: 200px; height: 35px;">
+                    <option value="false">Disable</option>
+                    <option value="true">Enable</option>
+                </InputSelect>
+            </div>
+
+        </div>
+        <div class="form-row">
+            <div class="col-3">
+                <label>Original Code <span class="mandatory">*</span></label>
+                <input type="text" class="form-control" @bind-value="Client.OriginalCode" />
+                <ValidationMessage For="@(() => Client.OriginalCode)" />
+            </div>
+            <div class="col-3">
+                <label>Group</label>
+                <input type="text" class="form-control" @bind-value="Client.Group" />
+            </div>
+            <div class="col-3">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-3">
+                <label>Address 1</label>
+                <input type="text" class="form-control" @bind-value="Client.Address1" />
+            </div>
+            <div class="col-3">
+                <label>Address 2</label>
+                <input type="text" class="form-control" @bind-value="Client.Address2" />
+            </div>
+            <div class="col-3">
+                <label>City</label>
+                <input type="text" class="form-control" @bind-value="Client.City" />
+            </div>
+
+        </div>
+        <div class="form-row">
+            <div class="col-3">
+                <label>State/Province</label>
+                <input type="text" class="form-control" @bind-value="Client.StateProvince" />
+            </div>
+            <div class="col-3">
+                <label>Country</label>
+                <input type="text" class="form-control" @bind-value="Client.Country" />
+            </div>
+            <div class="col-3">
+                <label>Postal Code</label>
+                <input type="text" class="form-control" @bind-value="Client.ZipPostalCode" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-3">
+                <label>Telephone Number</label>
+                <input type="text" class="form-control" @bind-value="Client.Telephone" />
+            </div>
+            <div class="col-3">
+                <label>Fax Number</label>
+                <input type="text" class="form-control" @bind-value="Client.Fax" />
+            </div>
+            <div class="col-3">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="col-6">
+                <label>Comments</label>
+                <textarea class="form-control" rows="3" @bind="Client.Comments" @bind:event="oninput"></textarea>
+            </div>
+            <div class="col-3">
+            </div>
+        </div>
+        <div class="form-row justify-content-end">
+            <button class="colorbutton" style="border-color: gray; width: 180px;" type="submit">
+                <i class="fa fa-save"></i>
+                Save
+            </button>
+            &nbsp;
+            <button class="colorcancel" style="border-color: gray; width: 150px;" type="button" @onclick="BackToList">Cancel</button>
+            <div class="col-3">
+            </div>
+
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int Id { get; set; } = 0;
+    public Client Client { get; private set; } = new Client();
+    private string tempClient;
+
+    string clientProcess = "New Client";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id > 0)
+        {
+            Client = await GetClientById(Id);
+            clientProcess = $"Edit";
+            //clientProcess = $"Update Client - {Client.Name}";
+        }
+
+        Client.Disabled = !Client.Disabled;
+    }
+
+    private async Task<Client> GetClientById(int id)
+    {
+        return (await clientService.GetClientById(id)).Data;
+    }
+
+    private async Task AddNewClient()
+    {
+        ApiResponse<bool> response;
+
+        Client.Disabled = !Client.Disabled;
+
+        if (Client.Id > 0)
+        {
+            response = await clientService.UpdateClient(Client);
+        }
+        else
+        {
+            response = await clientService.CreateClient(Client);
+        }
+
+        // Call the notification service
+        if (response.Status == ResponseStatus.Success)
+        {
+            string message = Client.Id > 0 ? "The client was successfully updated" : "The client was successfully created";
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Success,
+                    Message = message
+                });
+            BackToList();
+        }
+    }
+
+    private void BackToList()
+    {
+        navManager.NavigateTo("/clients");
+    }
+}

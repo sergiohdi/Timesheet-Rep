@@ -1,0 +1,61 @@
+﻿@inject IJSRuntime JSRuntime
+
+<input type="text"
+       value=@InValue
+       class="custom-form-control @(HighlightTextbox ? "highlight-textbox": "")"
+       style="width: 100%;"
+       id="@($"R-{Id}")"
+       onfocus="showRegularCommentButton(this)"
+       @onblur=onTextblured
+       @ref=timesheetInput />
+<div id="@($"D-{Id}")"
+     class="comment-button hide" title="Add Comment" @onclick=onOpenPopupTrigered>
+    <i class="fas fa-plus"></i>
+</div>
+
+
+@code {
+    [Parameter]
+    public string InValue { get; set; }
+    [Parameter]
+    public bool HighlightTextbox { get; set; }
+    [Parameter]
+    public string Id { get; set; }
+    [Parameter]
+    public bool OpenPopup { get; set; } = false;
+    [Parameter]
+    public EventCallback<TimesheetInput> OnEmitValue { get; set; }
+    [Parameter]
+    public EventCallback<TimesheetInput> OnOpenPopup { get; set; }
+
+    private ElementReference timesheetInput;
+
+    private async Task onTextblured()
+    {
+        // Make asynchrony to delay this event and validate if comment popup was open
+        await Task.Delay(500);
+        if (OpenPopup) return;
+
+        await EmitEventWithValues(OnEmitValue);
+    }
+
+    private async Task onOpenPopupTrigered()
+    {
+        OpenPopup = true;
+        await EmitEventWithValues(OnOpenPopup);
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await EmitEventWithValues(OnEmitValue);
+        }
+    }
+
+    private async Task EmitEventWithValues(EventCallback<TimesheetInput> callbackEvent)
+    {
+        TimesheetInput inputValues = await JSRuntime.InvokeAsync<TimesheetInput>("getValueFromInput", timesheetInput);
+        await callbackEvent.InvokeAsync(inputValues);
+    }
+}

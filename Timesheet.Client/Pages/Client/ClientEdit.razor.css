@@ -1,0 +1,19 @@
+﻿.main-container {
+    margin-top: 40px;
+}
+
+.form-row {
+    display: flex;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.mandatory {
+    color: red;
+}
+
+.ctm-chk {
+    width: 10%;
+}
