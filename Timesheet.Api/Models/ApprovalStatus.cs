@@ -10,11 +10,13 @@ namespace Timesheet.Api.Models
         public ApprovalStatus()
         {
             Approvals = new HashSet<Approvals>();
+            TimesheetControl = new HashSet<TimesheetControl>();
         }
 
         public int Approvalstatusid { get; set; }
         public string Appstatusname { get; set; }
 
         public virtual ICollection<Approvals> Approvals { get; set; }
+        public virtual ICollection<TimesheetControl> TimesheetControl { get; set; }
     }
 }

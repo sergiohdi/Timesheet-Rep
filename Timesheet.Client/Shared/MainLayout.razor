@@ -4,11 +4,32 @@
 
 
 
+<style>
+    .main {
+        /* background-color: #000; /* Sets the background color to black */ */
+        color: #fff; /* Sets the text color to white */
+    }
+
+    .navbar, .navbar-brand, .navbar-nav .nav-link {
+        color: #fff !important; /* Ensures text color is white in the navbar */
+    }
+     .black-bg
+
+    {
+        background-color: #000 !important;
+    }
+
+    .telerik-icon2 {
+        margin-right: 8px;
+        color: gold;
+        font-size: 38px;
+    }
+</style>
+
 <TelerikRootComponent>
     <div class="main">
-        @*<nav class="navbar navbar-expand-lg navbar-dark bg-dark header" style="height: 100px !important">*@
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark header">
-            <a class="navbar-brand" href="#">Timesheet</a>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark header black-bg">
+            <TelerikFontIcon Icon="@FontIcon.Clock" class="telerik-icon2" />
             <div class="collapse navbar-collapse" id="navbarNav">
                 <NavMenu />
             </div>
@@ -18,12 +39,12 @@
                 @Body
             </div>
             <TelerikNotification @ref="NotificationComponent"
-                         HorizontalPosition="@NotificationHorizontalPosition.Center"
+                                 HorizontalPosition="@NotificationHorizontalPosition.Center"
                                  VerticalPosition="@NotificationVerticalPosition.Top"></TelerikNotification>
         </div>
     </div>
-
 </TelerikRootComponent>
+
 
 @code{
     TelerikNotification NotificationComponent { get; set; }

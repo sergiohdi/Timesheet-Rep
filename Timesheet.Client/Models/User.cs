@@ -11,6 +11,8 @@ namespace Timesheet.Client.Models
             this.Disabled = false;
         }
         public int Id { get; set; }
+        [Required(ErrorMessage = "Employee ID is required")]
+        [MinLength(6, ErrorMessage = "Employee ID must be at least 3 characters")]
         public string ExternalId { get; set; }
         [Required(ErrorMessage = "First Name is required")]
         [MinLength(3, ErrorMessage = "First Name must be at least 3 characters")]
@@ -33,6 +35,8 @@ namespace Timesheet.Client.Models
         public string OfflineEmail { get; set; }
         public TimeSpan? CurrentHoursPerDay { get; set; }
         public double? BillingRate { get; set; }
+        [Required(ErrorMessage = "Job Title is required")]
+        [MinLength(3, ErrorMessage = "Job Title must be at least 2 characters")]
         public string JobTitle { get; set; }
         public string ReportsTo { get; set; }
         public double? ConvertDaysToHours { get; set; }

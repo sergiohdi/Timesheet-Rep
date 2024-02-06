@@ -64,7 +64,23 @@ namespace Timesheet.Api.Business.Interfaces
                 return false;
             }
 
-            return _departmentRepository.DeleteDepartment(department);
+            bool result;
+            try
+            {
+                result = _departmentRepository.DeleteDepartment(department);
+            }
+
+            catch (System.Exception ex)
+            {
+                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
+                {
+                    throw;
+                }
+
+                result = false;
+            }
+
+            return result;
         }
     }
 }

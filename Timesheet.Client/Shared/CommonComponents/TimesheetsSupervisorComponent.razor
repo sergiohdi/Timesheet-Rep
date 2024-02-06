@@ -1,0 +1,210 @@
+﻿@inject IApprovalDataService approvalService
+@inject IComponentComunicationService notificationSrv
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .center-checkbox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Hide the existing labels */
+    .k-dateinput-start .k-label,
+    .k-dateinput-end .k-label {
+        font-size: 0;
+        color: transparent;
+    }
+
+        /* Add custom labels */
+        .k-dateinput-start .k-label::before {
+            content: "From:";
+            font-size: 14px; /* Adjust the font size as needed */
+            color: black; /* Adjust the color as needed */
+        }
+
+        .k-dateinput-end .k-label::before {
+            content: "To:";
+            font-size: 14px; /* Adjust the font size as needed */
+            color: black; /* Adjust the color as needed */
+        }
+
+    .my-custom-datepicker .k-input {
+        width: 196px; /* or any width that suits your design */
+    }
+
+    .telerik-icon3 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: dimgray;
+    }
+
+    .telerik-icon4 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: goldenrod;
+    }
+
+    .telerik-icon5 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: green;
+    }
+
+    .telerik-icon6 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: red;
+    }
+
+</style>
+
+@if (_regularTimeRequests == null)
+{
+    <TelerikLoaderContainer Visible="@( _regularTimeRequests == null )" Text="Loading Time Off..." />
+}
+else
+{
+    <h4>Timesheets</h4>
+
+    <TelerikGrid Data=@_regularTimeRequests
+                 EditMode="@GridEditMode.Inline"
+                 @ref="@GridRef"
+                 Pageable="true"
+                 PageSize="12"
+                 Navigable="true"
+                 ConfirmDelete="true"
+                 FilterMode="Telerik.Blazor.GridFilterMode.FilterRow">
+        <GridToolBarTemplate>
+            <div style="display: flex;">
+                <SelectCalendar ShowLinks="true" OnReturnDates="SetDates" />
+
+                <div style="align-self: flex-end; margin-left: 16px; display: flex;">
+                    <div style="margin-right: 10px;">
+                        <TelerikButton OnClick="@ApproveSelected" Enabled="@IsButtonEnabled">Approve</TelerikButton>
+                    </div>
+                    <div style="margin-right: 10px;">
+                        <TelerikButton OnClick="@RejectSelected" Enabled="@IsButtonEnabled">Reject</TelerikButton>
+                    </div>
+                </div>
+            </div>
+        </GridToolBarTemplate>
+
+        <GridSettings></GridSettings>
+        <GridColumns>
+            <GridCommandColumn Width="15px">
+                @{
+                    var currentTimesheet = context as RegularTimeApproval;
+                    <div class="center-checkbox">
+                        <TelerikCheckBox Value="currentTimesheet.IsSelected" ValueChanged="@((bool isSelected) => OnRowSelected(currentTimesheet, isSelected))"></TelerikCheckBox>
+                    </div>
+
+                }
+            </GridCommandColumn>
+            <GridColumn Field="@nameof(RegularTimeApproval.UserName)" Title="User" Width="140px" />            
+            <GridColumn Field="@nameof(RegularTimeApproval.TimesheetPeriod)" Title="Timesheet Period" Width="150px" Sortable="true" />
+            <GridColumn Field="@nameof(RegularTimeApproval.StatusName)" Title="Status" Width="90px">
+                <Template>
+                    @{
+                        var status = (RegularTimeApproval)context;
+                    }
+                    <StatusButton StatusName="@status.StatusName" />
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+
+    [Parameter]
+    public bool IsSupervisor { get; set; } = false;
+
+    private List<RegularTimeApproval> _regularTimeRequests = null;
+    public TelerikGrid<RegularTimeApproval> GridRef { get; set; }
+
+    private DateTime _startDate = DateTime.Now.Day <= 15 ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 16);
+    private DateTime _endDate = DateTime.Now.Day <= 15 ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
+
+    private bool IsButtonEnabled { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetRegularTimeRequests();
+    }
+
+    private void OnRowSelected(RegularTimeApproval currentTimesheet, bool isSelected)
+    {
+        currentTimesheet.IsSelected = isSelected;
+        IsButtonEnabled = _regularTimeRequests.Any(t => t.IsSelected);
+        StateHasChanged();
+    }
+
+    private async Task ApproveSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimeoffs = _regularTimeRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+
+        if (selectedTimeoffs.Any())
+        {
+            var response = await approvalService.ApproveTimeoffRequests(selectedTimeoffs);
+            await GetRegularTimeRequests();
+        }
+    }
+
+    private async Task RejectSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimeoffs = _regularTimeRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+
+        if (selectedTimeoffs.Any())
+        {
+            var response = await approvalService.RejectTimesheetsRequests(selectedTimeoffs);
+            await GetRegularTimeRequests();
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetRegularTimeRequests()
+    {
+        var response = await approvalService.GetRegularTimeRequests(_startDate, _endDate);
+        _regularTimeRequests = response.Data.ToList();
+    }
+
+    private async Task SetDates((DateTime startDate, DateTime endDate) dates)
+    {
+        _startDate = dates.startDate;
+        _endDate = dates.endDate;
+        await GetRegularTimeRequests();
+    }
+
+}
+
+
+
+
+
+

@@ -1,0 +1,30 @@
+﻿@inherits ComponentBase
+
+<div style="text-align: center;">
+    <button type="button" class="@GetButtonClass()" style="font-size: 0.9em;">@GetButtonText()</button>
+</div>
+
+@code {
+    [Parameter]
+    public string StatusName { get; set; }
+
+    private string GetButtonClass() => StatusName switch
+    {
+        "NotSubmitted" => "btn btn-secondary",
+        "Waiting" => "btn btn-warning",
+        "Approved" => "btn btn-success",
+        "Rejected" => "btn btn-danger",
+        "SupervisorApproval" => "btn btn-primary",
+        _ => "btn btn-dark",
+    };
+
+    private string GetButtonText() => StatusName switch
+    {
+        "NotSubmitted" => "Not Submitted",
+        "Waiting" => "Waiting for Approval",
+        "Approved" => "Approved",
+        "Rejected" => "Rejected",
+        "SupervisorApproval" => "Supervisor Approval",
+        _ => "Unknown",
+    };
+}

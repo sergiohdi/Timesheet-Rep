@@ -50,7 +50,22 @@ namespace Timesheet.Api.Business.Implementations
                 return false;
             }
 
-            return _userRepository.DeleteUser(user);
+            bool result;
+            try
+            {
+                result = _userRepository.DeleteUser(user);
+            }
+            catch (System.Exception ex)
+            {
+                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
+                {
+                    throw;
+                }
+
+                result = false;
+            }
+
+            return result;
         }
     }
 }

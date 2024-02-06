@@ -8,9 +8,11 @@ namespace Timesheet.Client.Services.Interfaces
         // Susbcribers
         event Action<Notification> Subscriber;
         event Action<bool> ChangeWidthSubscriber;
+        event Action OpenTimeOffPopUp;
 
         // Methods
         void SendNotification(Notification notification);
         void SendChangeWidth(bool value);
+        void SendOpenPopUpAction();
     }
 }

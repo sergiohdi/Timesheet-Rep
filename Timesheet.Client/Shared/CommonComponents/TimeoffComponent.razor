@@ -1,0 +1,276 @@
+﻿@using Telerik.SvgIcons
+@using System.ComponentModel.DataAnnotations
+@inject IApprovalDataService approvalService
+@inject IComponentComunicationService notificationSrv
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .center-checkbox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Hide the existing labels */
+    .k-dateinput-start .k-label,
+    .k-dateinput-end .k-label {
+        font-size: 0;
+        color: transparent;
+    }
+
+        /* Add custom labels */
+        .k-dateinput-start .k-label::before {
+            content: "From:";
+            font-size: 14px; /* Adjust the font size as needed */
+            color: black; /* Adjust the color as needed */
+        }
+
+        .k-dateinput-end .k-label::before {
+            content: "To:";
+            font-size: 14px; /* Adjust the font size as needed */
+            color: black; /* Adjust the color as needed */
+        }
+
+    .my-custom-datepicker .k-input {
+        width: 196px; /* or any width that suits your design */
+    }
+
+    .telerik-icon3 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: dimgray;
+    }
+
+    .telerik-icon4 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: goldenrod;
+    }
+
+    .telerik-icon5 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: green;
+    }
+
+    .telerik-icon6 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: red;
+    }
+
+</style>
+
+@if (_timeoffRequests == null)
+{
+    <TelerikLoaderContainer Visible="@( _timeoffRequests == null )" Text="Loading Time Off..." />
+}
+else
+{
+    <h4>Time Off</h4>
+
+    <TelerikGrid Data=@_timeoffRequests
+                 EditMode="@GridEditMode.Inline"
+    @ref="@GridRef"
+                 Pageable="true"
+                 PageSize="12"
+                 Navigable="true"
+                 ConfirmDelete="true"
+                 FilterMode="Telerik.Blazor.GridFilterMode.FilterRow">
+        <GridToolBarTemplate>
+            <div style="display: flex;">
+                <SelectCalendar ShowLinks="true" OnReturnDates="SetDates" />
+
+                <div style="align-self: flex-end; margin-left: 16px; display: flex;">
+                    <div style="margin-right: 10px;">
+                        <TelerikButton OnClick="@ApproveSelected" Enabled="@IsButtonEnabled">Approve</TelerikButton>
+                    </div>
+                    @if (IsSupervisor == true)
+                    {
+                    <div style="margin-right: 10px;">
+                        <TelerikButton OnClick="@RejectSelected" Enabled="@IsButtonEnabled">Reject</TelerikButton>
+                    </div>
+                    }
+                    @if (IsSupervisor == false)
+                    {
+                        <div style="margin-right: 10px;">
+                            <TelerikButton OnClick="@ReopenSelected" Enabled="@IsButtonEnabled">Reopen</TelerikButton>
+                        </div>
+                        <div>
+                            <TelerikButton OnClick="@DeleteSelected" Enabled="@IsButtonEnabled">Delete</TelerikButton>
+                        </div>
+                    }
+                </div>
+            </div>
+        </GridToolBarTemplate>
+
+        <GridSettings></GridSettings>
+        <GridColumns>
+            <GridCommandColumn Width="15px">
+                @{
+                    var currentTimesheet = context as TimeoffRequest;
+                    <div class="center-checkbox">
+                        <TelerikCheckBox Value="currentTimesheet.IsSelected" ValueChanged="@((bool isSelected) => OnRowSelected(currentTimesheet, isSelected))"></TelerikCheckBox>
+                    </div>
+                }
+            </GridCommandColumn>
+            <GridColumn Field="@nameof(TimeoffRequest.UserName)" Title="User" Width="140px" />
+            <GridColumn Field="@nameof(TimeoffRequest.TimeoffName)" Title="Type" Width="110px" />
+            <GridColumn Field="@nameof(TimeoffRequest.StartDate)" Title="Start Date" Width="110px" DisplayFormat="{0:MMM dd, yyyy}" />
+            <GridColumn Field="@nameof(TimeoffRequest.EndDate)" Title="End Date" Width="110px" DisplayFormat="{0:MMM dd, yyyy}" />
+            <GridColumn Field="@nameof(TimeoffRequest.Duration)" Title="Duration" Width="70px" />
+            <GridColumn Field="@nameof(TimeoffRequest.Comments)" Title="Comments" Width="150px" />            
+            <GridColumn Field="@nameof(TimeoffRequest.StatusName)" Title="Status" Width="100px">
+                <Template>
+                    @{
+                        var status = context as TimeoffRequest;
+                        switch (status.StatusName)
+                        {
+                            case "NotSubmitted":
+                                <div style="text-align: center;"><button type="button" class="btn btn-secondary" style="font-size: 0.9em;">Not Submitted</button></div>
+                                break;
+                            case "Waiting":
+                                <div style="text-align: center;"><button type="button" class="btn btn-warning" style="font-size: 0.9em;">Waiting for Approval</button></div>
+                                break;
+                            case "Approved":
+                                <div style="text-align: center;"><button type="button" class="btn btn-success" style="font-size: 0.9em;">Approved</button></div>
+                                break;
+                            case "Rejected":
+                                <div style="text-align: center;"><button type="button" class="btn btn-danger" style="font-size: 0.9em;">Rejected</button></div>
+                                break;
+                            case "SupervisorApproval":
+                                <div style="text-align: center;"><button type="button" class="btn btn-primary" style="font-size: 0.9em;">Supervisor Approval</button></div>
+                                break;
+                            default:
+                                <div style="text-align: center;"><button type="button" class="btn btn-dark" style="font-size: 0.9em;">Unknown</button></div>
+                                break;
+                        }
+                    }
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+
+    [Parameter]
+    public bool IsSupervisor { get; set; } = false;
+
+    private List<TimeoffRequest> _timeoffRequests = null;
+    public TelerikGrid<TimeoffRequest> GridRef { get; set; }
+
+    private DateTime _startDate = DateTime.Now.Day <= 15 ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 16);
+    private DateTime _endDate = DateTime.Now.Day <= 15 ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
+
+
+    private bool IsButtonEnabled { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        await GetTimeoffRequests();
+    }
+
+    private void OnRowSelected(TimeoffRequest currentTimesheet, bool isSelected)
+    {
+        currentTimesheet.IsSelected = isSelected;
+        IsButtonEnabled = _timeoffRequests.Any(t => t.IsSelected);
+        StateHasChanged();
+    }
+
+    private async Task ApproveSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimeoffs = _timeoffRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+
+        if (selectedTimeoffs.Any())
+        {
+            var response = await approvalService.ApproveTimeoffRequests(selectedTimeoffs);
+            await GetTimeoffRequests();
+        }
+    }
+
+    private async Task ReopenSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimeoffs = _timeoffRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+
+        if (selectedTimeoffs.Any())
+        {
+            var response = await approvalService.ReopenTimeoffRequests(selectedTimeoffs);
+            await GetTimeoffRequests();
+        }
+    }
+
+    private async Task RejectSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimeoffs = _timeoffRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+
+        if (selectedTimeoffs.Any())
+        {
+            var response = await approvalService.RejectTimeoffSelected(selectedTimeoffs);
+            await GetTimeoffRequests();
+        }
+    }
+
+    private async Task DeleteSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimeoffs = _timeoffRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+
+        if (selectedTimeoffs.Any())
+        {
+            var response = await approvalService.DeleteTimeoffRequests(selectedTimeoffs);
+            await GetTimeoffRequests();
+        }
+    }
+
+    private async Task GetTimeoffRequests()
+    {
+        var response = await approvalService.GetTimeOffRequests(_startDate, _endDate, IsSupervisor);
+        response.Data.ToList().ForEach(x =>
+        {
+            x.StartDateString = x.StartDate.ToString("dd/MM/yyyy");
+            x.EndDateString = x.EndDate.ToString("dd/MM/yyyy");
+        });
+
+        _timeoffRequests = response.Data.ToList();
+    }
+
+    private async Task SetDates((DateTime startDate, DateTime endDate) dates)
+    {
+        _startDate = dates.startDate;
+        _endDate = dates.endDate;
+        await GetTimeoffRequests();
+    }
+
+}
+
+
+
+

@@ -1,0 +1,248 @@
+﻿@inject IGeneralDataService generalSrv
+@inject ITimesheetService timeSheetSrv
+@inject IApprovalDataService approvalSrv
+@inject ITimeOffDataService timeOffSvc
+
+@*Timeoff PopUp*@
+<TelerikWindow Resizable="false"
+               Modal="true"
+               Width="460px"
+               Height="530px"
+               Visible="true"
+               FooterLayoutAlign="@WindowFooterLayoutAlign.End">
+    <WindowTitle>
+        <strong>Time Off</strong>
+    </WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Close" Icon="@SvgIcon.X" OnClick="@ClosePopUp" />
+    </WindowActions>
+    <WindowContent>
+        <EditForm EditContext="_editContext">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+             <div class="row col-12">
+                <div class="form-group col-12">
+                    <label for="timeoffType"><b>Timeoff Type:</b></label>
+                    <TelerikDropDownList Data=@TimeOffItems
+                                         @bind-Value="TimeoffApproval.TimeOffId"
+                                         TextField="@nameof(TimeOff.TimeOffName)"
+                                         ValueField="@nameof(TimeOff.TimeOffId)"
+                                         DefaultText="Select timeoff type"
+                                         Size="@ThemeConstants.DropDownList.Size.Small"
+                                         Width="100%"
+                                         Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Width="360px"></DropDownListPopupSettings>
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+                </div>
+            </div>
+            <div class="row col-12">
+                <div class="form-group col-6">
+                    <label for="startDate"><b>Start Date:</b></label>
+                    <TelerikDatePicker @bind-Value="@TimeoffApproval.StartDate"
+                                       Min="@_minDate"
+                                       Max="@_maxDate"
+                                       Id="startDate"
+                                       DisabledDates="_weekendDates"
+                                       Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                    </TelerikDatePicker>
+                </div>
+                <div class="form-group col-6">
+                    <label for="endDate"><b>End Date:</b></label>
+                    <TelerikDatePicker @bind-Value="@TimeoffApproval.EndDate"
+                                       Min="@_minDate"
+                                       Max="@_maxDate"
+                                       Id="endDate"
+                                       DisabledDates="_weekendDates"
+                                       Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                    </TelerikDatePicker>
+                </div>
+            </div>
+            <div class="row col-12">
+                <div class="form-group col-12">
+                    <label for="duration"><b>Duration by Day:</b></label>
+                    <TelerikNumericTextBox @bind-Value=@TimeoffApproval.Duration
+                                           Decimals="2"
+                                           Format="N2"
+                                           Id="step-value"
+                                           Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                    </TelerikNumericTextBox>
+                </div>
+            </div>
+            <div class="row col-12">
+                <div class="form-group col-12">
+                    <label for="comment"><b>Comments:</b></label>
+                    <TelerikTextArea Id="timeoff-comments"
+                                     Placeholder="Enter your comments here"
+                                     Value="@TimeoffApproval.Comments"
+                                     ValueExpression="@(() => TimeoffApproval.Comments)"
+                                     ValueChanged="@((value) => TimeoffApproval.Comments = value)"
+                                     Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                    </TelerikTextArea>
+                </div>
+            </div>
+        </EditForm>
+    </WindowContent>
+    <WindowFooter>
+        @if (TimeoffApproval.ApprovalStatusId != (int)ApprovalStatusOption.Approved)
+        {
+            <div class="form-group" style="width:100%; display:flex;">
+                <div style="width: 40%; margin-left:15px;">
+                    @if (TimeoffApproval.ApprovalId > 0)
+                    {
+                        @if (_disableSaveButton)
+                        {
+                            <button class="btn btn-danger delete-button" disabled>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span class="sr-only">Loading...</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-danger delete-button" title="Delete timeoff request" @onclick=ConfirmDeleteTimeoffRecord>
+                                Delete
+                            </button>
+                        }
+                    }
+                </div>
+                <div style="width: 60%">
+                    <button class="btn btn-default" title="Cancel" @onclick="@ClosePopUp">
+                        Cancel
+                    </button>
+                    @if (_disableSaveButton)
+                    {
+                        <button class="btn btn-info save-button" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span class="sr-only">Loading...</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-info save-button" title="Submit for approval" @onclick=SaveTimeoffData>
+                            @_submitText
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </WindowFooter>
+</TelerikWindow>
+@*Timeoff PopUp*@
+
+@*Timeoff Dialog PopUp*@
+<TelerikDialog @bind-Visible="@_openConfirmDeleteRecord" Width="320px" ShowCloseButton="false">
+    <DialogContent>
+        <p style="text-align: center;">Are you sure to delete this record?</p>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="@(() => { _openConfirmDeleteRecord = false; })"> No </TelerikButton>
+        <TelerikButton ThemeColor="@(ThemeConstants.Button.ThemeColor.Primary)" OnClick="DeleteTimeoffRecord"> Yes </TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+@*Timeoff Dialog PopUp*@
+
+@code {
+    [Parameter]
+    public bool OpenTimeOffPopUp { get; set; } = false;
+    [Parameter]
+    public TimeoffApproval TimeoffApproval { get; set; } = new TimeoffApproval();
+    [Parameter]
+    public IEnumerable<TimeOff> TimeOffItems { get; set; } = new List<TimeOff>();
+    [Parameter]
+    public EventCallback<bool> OnClosePopUp { get; set; }
+
+    private List<DateTime> _weekendDates = new List<DateTime>();
+    private DateTime _minDate;
+    private DateTime _maxDate = new DateTime(2050, 12, 31);
+    private bool _disableSaveButton = false;
+    private bool _openConfirmDeleteRecord = false;
+    private EditContext _editContext;
+    private bool _disableDeleteButton = false;
+    private bool _openTimeoffDialogPopUp = false;
+    private string _submitText = "Submit for approval";
+    // temp line
+    const int systemUserId = 579;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(TimeoffApproval);
+        _weekendDates = (await generalSrv.GetWeekendDates()).Data.ToList();
+        _minDate = timeSheetSrv.StartPeriod;
+
+        if (!TimeOffItems.Any())
+        {
+            TimeOffItems = (await timeOffSvc.GetTimeOffs()).Data.Where(x => x.Disabled == false).ToList();
+        }
+
+        if (TimeoffApproval is not null && TimeoffApproval.ApprovalId > 0)
+        {
+            _submitText = "Update request";
+        }
+    }
+
+    private void ConfirmDeleteTimeoffRecord()
+    {
+        _openConfirmDeleteRecord = true;
+    }
+
+    private async Task SaveTimeoffData()
+    {
+        var isValidForm = _editContext.Validate();
+        if (!isValidForm)
+        {
+            return;
+        }
+
+        ChangeButtonsStatus();
+
+        ApiResponse<bool> result = new ApiResponse<bool>();
+        if (TimeoffApproval.ApprovalId == 0)
+        {
+            TimeoffApproval.UserId = systemUserId;
+            TimeoffApproval.ApprovalStatusId = (int)ApprovalStatusOption.Waiting;
+            TimeoffApproval.ApprovalType = (int)ApprovalType.Timeoff;
+
+            result = await approvalSrv.CreateTimeoffRequest(TimeoffApproval);
+        }
+        else
+        {
+            result = await approvalSrv.UpdateTimeoffRecord(TimeoffApproval.ApprovalId, TimeoffApproval);
+        }
+
+        if (result.Status == ResponseStatus.Success && !result.Data)
+        {
+            _openTimeoffDialogPopUp = true;
+            return;
+        }
+        else
+        {
+            await OnClosePopUp.InvokeAsync(true);
+        }
+
+        ChangeButtonsStatus();
+    }
+
+    private async Task DeleteTimeoffRecord()
+    {
+        _openConfirmDeleteRecord = false;
+        ChangeButtonsStatus();
+        var result = await approvalSrv.DeleteTimeoffRecord(TimeoffApproval.ApprovalId);
+        if (result.Status == ResponseStatus.Success && result.Data)
+        {
+            await OnClosePopUp.InvokeAsync(true);
+        }
+        ChangeButtonsStatus();
+    }
+
+    private void ChangeButtonsStatus()
+    {
+        _disableSaveButton = !_disableSaveButton;
+        _disableDeleteButton = !_disableDeleteButton;
+    }
+
+    private async Task ClosePopUp()
+    {
+        await OnClosePopUp.InvokeAsync(false);
+    }
+}

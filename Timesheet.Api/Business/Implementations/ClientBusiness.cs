@@ -58,7 +58,23 @@ namespace Timesheet.Api.Business.Implementations
                 return false;
             }
 
-            return _clientRepository.DeleteClient(client);
+            bool result;
+            try
+            {
+                result = _clientRepository.DeleteClient(client);
+            }
+
+            catch (System.Exception ex)
+            {
+                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
+                {
+                    throw;
+                }
+
+                result = false;
+            }
+
+            return result;            
         }
     }
 }

@@ -2,11 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 using Timesheet.Api.Utils;
+using Timesheet.Shared.Utils;
 
 namespace Timesheet.Api.Business.Implementations
 {
@@ -47,18 +49,24 @@ namespace Timesheet.Api.Business.Implementations
 
         public IEnumerable<TimesheetItemDto> GetTimesheetData(TimesheetRequestDto request)
         {
-            string currentDatePeriod = GetCurrentDatePeriod();
-            string requestPeriod = $"{request.Year}-{request.Month}-{request.Period}";
+            long currentPeriod = DateFunctions.GetPeriodInTicks(
+                DateTime.Now.Year, 
+                DateTime.Now.Month, 
+                DateTime.Now.Day > 15 ? 16 : 1);
+            long requestPeriod = DateFunctions.GetPeriodInTicks(
+                request.Year, 
+                request.Month, 
+                request.Period == 2 ? 16 : 1);
             IEnumerable<TimesheetItemDto> preferences = GetUserPreferences(request.UserId);
             IEnumerable<TimesheetDataDto> result = _timesheetDataRepository.GetTimesheetData(request);
 
             List<TimesheetItemDto> records;
-            if (result.Any() && currentDatePeriod.Equals(requestPeriod))
+            if (result.Any() && requestPeriod >= currentPeriod)
             {
                 records = GroupTimesheetData(result).ToList();
                 preferences.ToList().ForEach(item =>
                 {
-                    TimesheetItemDto entry = records.FirstOrDefault(
+                    TimesheetItemDto entry = records.Find(
                         x => (x.ClientId != null && x.ClientId == item.ClientId &&
                                                     x.ProjectId != null && x.ProjectId == item.ProjectId &&
                                                     x.ActivityId != null && x.ActivityId == item.ActivityId));
@@ -73,7 +81,7 @@ namespace Timesheet.Api.Business.Implementations
                     }
                 });
             }
-            else if (result.Any() && !currentDatePeriod.Equals(requestPeriod))
+            else if (result.Any() && requestPeriod < currentPeriod)
             {
                 records = GroupTimesheetData(result).ToList();
             }
@@ -83,13 +91,15 @@ namespace Timesheet.Api.Business.Implementations
             }
 
             int startDay = request.Period == 1 ? 1 : 16;
-            int endDay = request.Period == 1 ? 15 : new DateTime(request.Year, (request.Month + 1), 1).AddDays(-1).Day;
+            int endDay = request.Period == 1 ? 15 : DateFunctions.GetPeriodLastDate(request.Year, request.Month, startDay).Day;
+
             List<TimesheetEntryDto> entries = new();
             for (int i = startDay; i <= endDay; i++)
             {
                 entries.Add(new TimesheetEntryDto
                 {
                     Day = i,
+                    Comments = string.Empty,
                     EntryDate = new DateTime(request.Year, request.Month, i)
                 });
             }
@@ -107,24 +117,26 @@ namespace Timesheet.Api.Business.Implementations
 
         public void UpdateTimesheetBaseInformation(TimesheetItemDto record, Property property)
         {
-            int oldBillableInfo = _timesheetDataRepository.GetTimesheetRecord(record.Entries.FirstOrDefault().Id)?.Billable.Value ?? 1;
-            object propertyData = null;
+            long timesheetId = record.Entries.FirstOrDefault().Id;
+            var oldRecord = _timesheetDataRepository.GetTimesheetRecord(timesheetId);
+            Dictionary<Property, object> propertyData = new Dictionary<Property, object>();
             switch (property)
             {
-                case Property.Client:
-                    propertyData = _clientRepository.GetClientById(record.ClientId.Value);
-                    break;
                 case Property.Project:
-                    propertyData = _projectRepository.GetProjectById(record.ProjectId.Value);
+                    if (record.ClientId != oldRecord.ClientId)
+                    {
+                        propertyData.Add(Property.Client, _clientRepository.GetClientById(record.ClientId.Value));
+                    }
+                    propertyData.Add(Property.Project, _projectRepository.GetProjectById(record.ProjectId.Value));
                     break;
                 case Property.Activity:
-                    propertyData = _activityRepository.GetActivityById(record.ActivityId.Value);
+                    propertyData.Add(Property.Activity, _activityRepository.GetActivityById(record.ActivityId.Value));
                     break;
                 default:
                     break;
             }
             
-            _timesheetDataRepository.UpdateTimesheetBaseInformation(record, property, propertyData, oldBillableInfo);
+            _timesheetDataRepository.UpdateTimesheetBaseInformation(record, propertyData, oldRecord.Billable.Value);
         }
 
         public void DeleteTimesheetRecords(TimesheetItemDto record)
@@ -156,8 +168,6 @@ namespace Timesheet.Api.Business.Implementations
             if (entry.Id != 0 && entry.TotalHours == 0)
             {
                 _timesheetDataRepository.DeleteTimesheetRecord(entry.Id);
-
-                // If the record is deleted, then return -1
                 return 0;
             }
 
@@ -237,12 +247,6 @@ namespace Timesheet.Api.Business.Implementations
             }
 
             return preferences;
-        }
-
-        private static string GetCurrentDatePeriod()
-        {
-            string currentPeriod = DateTime.Now.Day > 15 ? "2" : "1";
-            return $"{DateTime.Now.Year}-{DateTime.Now.Month}-{currentPeriod}";
         }
     }
 }

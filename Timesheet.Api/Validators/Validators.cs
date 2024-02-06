@@ -30,7 +30,7 @@ namespace Timesheet.Api.Validators
                 .WithMessage(Constants.FIELD_REQUIRED);
             RuleFor(x => x.Name)
                 .MinimumLength(5)
-                .WithMessage("Client name cannot shorter than 5 characters");
+                .WithMessage("Client name cannot be shorter than 5 characters");
         }
     }
 
@@ -80,21 +80,21 @@ namespace Timesheet.Api.Validators
     {
         public UserValidator()
         {
-            //RuleFor(x => x.FirstName)
-            //    .Must(v => !string.IsNullOrEmpty(v))
-            //    .WithMessage(Constants.FIELD_REQUIRED);
-            //RuleFor(x => x.LastName)
-            //    .Must(v => !string.IsNullOrEmpty(v))
-            //    .WithMessage(Constants.FIELD_REQUIRED);
-            //RuleFor(x => x.LoginName)
-            //    .Must(v => !string.IsNullOrEmpty(v))
-            //    .WithMessage(Constants.FIELD_REQUIRED);
-            //RuleFor(x => x.Email)
-            //    .Must(v => !string.IsNullOrEmpty(v))
-            //    .WithMessage(Constants.FIELD_REQUIRED);
-            //RuleFor(x => x.SupervisorId)
-            //    .NotNull().WithMessage("{PropertyName} cannot be null")
-            //    .GreaterThan(0);
+                  RuleFor(x => x.FirstName)
+                .Must(v => !string.IsNullOrEmpty(v))
+                .WithMessage(Constants.FIELD_REQUIRED);
+            RuleFor(x => x.LastName)
+                .Must(v => !string.IsNullOrEmpty(v))
+                .WithMessage(Constants.FIELD_REQUIRED);
+            RuleFor(x => x.LoginName)
+                .Must(v => !string.IsNullOrEmpty(v))
+                .WithMessage(Constants.FIELD_REQUIRED);
+            RuleFor(x => x.Email)
+                .Must(v => !string.IsNullOrEmpty(v))
+                .WithMessage(Constants.FIELD_REQUIRED);
+            RuleFor(x => x.SupervisorId)
+                .NotNull().WithMessage("{PropertyName} cannot be null")
+                .GreaterThan(0);
         }
     }
 }

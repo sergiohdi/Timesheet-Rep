@@ -13,5 +13,9 @@ namespace Timesheet.Api.Models
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public int ApprovalStatusId { get; set; }
+        public int? UserTemplateId { get; set; }
+
+        public virtual ApprovalStatus ApprovalStatus { get; set; }
+        public virtual User User { get; set; }
     }
 }

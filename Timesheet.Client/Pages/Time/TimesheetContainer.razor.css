@@ -1,5 +1,5 @@
 ﻿.controls {
-    display:flex;
+    display: flex;
     gap: 15px;
 }
 
@@ -7,13 +7,13 @@
     width: 20%;
 }
 
-.control > label {
-    font-weight: bold;
-    margin-right: 5px;
-}
+    .control > label {
+        font-weight: bold;
+        margin-right: 5px;
+    }
 
 .approve-button {
-    width: 20%;
+    width: 14%;
     text-align: right;
 }
 
@@ -29,11 +29,41 @@
 
 .grid-actions {
     height: 50px;
-    padding-top: 10px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
 }
 
-@media only screen and (min-width: 2030px) {
-    .approve-button {
-        width: 80%;
-    }
+.custom-button {
+    border: 1px solid #5798be;
+    background-color: #5798be;
+}
+
+.status-button {
+    border-radius: 10px;
+    cursor: default;
+}
+
+.not-submited {
+    background-color: var(--not-submited);
+    border-color: var(--not-submited);
+    color: white;
+}
+
+.pending {
+    background-color: var(--pending);
+    border-color: var(--pending);
+    color: black;
+}
+
+.approved {
+    background-color: var(--approved);
+    border-color: var(--approved);
+    color: white;
+}
+
+.rejected {
+    background-color: var(--rejected);
+    border-color: var(--rejected);
+    color: white;
 }

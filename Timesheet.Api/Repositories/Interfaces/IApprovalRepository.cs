@@ -12,6 +12,12 @@ namespace Timesheet.Api.Repositories.Interfaces
         bool DeleteTimeoffRecord(ApprovalDto timeoff);
         bool UpdateTimeoffRecord(ApprovalDto approval);
         bool UpdateApprovalStatus(List<DateTime> periods, List<int> userIds);
-        IEnumerable<ApprovalDto> GetTimeoffRequests(DateTime startDate, DateTime endDate, int supervisorId = 0);
+        IEnumerable<ApprovalTimeoffRequestDto> GetTimeoffRequests(DateTime startDate, DateTime endDate, int supervisorId = 0);
+        IEnumerable<ApprovalRegularTimeRequestsDto> GetRegularTimeRequests(DateTime startDate, DateTime endDate, int supervisorId);
+        bool ProcessRequests(int[] ids, int status);
+        IEnumerable<ApprovalDto> GetApprovalRecords(int[] ids);
+        bool DeleteApprovalRequests(int[] ids);
+        bool DeleteTimesheetRecordApproval(DateTime period, int userId);
+        IEnumerable<ApprovalDto> GetRegularTimeApprovals(int userId, DateTime period);
     }
 }

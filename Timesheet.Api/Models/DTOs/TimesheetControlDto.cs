@@ -10,5 +10,6 @@ namespace Timesheet.Api.Models.DTOs
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public int ApprovalStatusId { get; set; }
+        public int UserTemplateId { get; set; }
     }
 }

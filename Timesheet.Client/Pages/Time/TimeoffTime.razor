@@ -1,0 +1,162 @@
+﻿@inject ITimeOffDataService timeOffSvc
+@inject IApprovalDataService approvalSrv
+@inject IGeneralDataService generalSrv
+@inject ITimesheetService timeSheetSrv
+@inject IComponentComunicationService notificationSrv
+@implements IDisposable
+
+<table class="table table-bordered time-grid custom-margin-table">
+    <thead class="thead-time-grid">
+        <tr>
+            <th style="width: 30px;"></th>
+            <th rowspan="3" class="row-timeoff">Time off</th>
+            @foreach (var item in Days)
+            {
+                <th class="row-day @(item.isWeekendDay ? "timeoff" : "")">
+                    @(item.day)
+                </th>
+            }
+            <th style="width: 50px">Total</th>
+            <th style="width: 65px">&nbsp;</th>
+            <th class="row-billable">&nbsp;</th>
+            <th style="width: 70px">&nbsp;</th>
+        </tr>
+    </thead>
+    <tbody class="tbody-time-grid">
+        @if (timeSheetSrv.TimesheetData != null)
+        {
+            @foreach (var item in timeSheetSrv.TimesheetData.Where(x => x.IsTimeOff)
+           .OrderBy(x => x.TimeOffId)
+           .Select((x, i) => new { Index = (i + 1), Record = x })
+           .ToList())
+            {
+                <tr>
+                    <td class="icon-cell">
+                    </td>
+                    <td>
+                        <div class="timeoff-title">
+                            @_timeOffItems.FirstOrDefault(x => x.TimeOffId == item.Record.TimeOffId)?.TimeOffName &nbsp;
+                            <div class="timeoff-status @((SetColorStatus(item.Record.ApprovalStatus.Value)))"></div>
+                        </div>
+                    </td>
+                    @foreach (var entry in item.Record.Entries)
+                    {
+                        <td @onclick=@(() => OnTimeOffTextClick(item.Record.TimeOffId.Value, entry.EntryDate))>
+                            <div class="timeoff-value @(entry.TotalHours > 0 ? "cursor-pointer" : "")" >
+                                <div>
+                                    @GetDayHours(entry.TotalHours)
+                                </div>
+                            </div>
+                        </td>
+                    }
+                    <td class="total">
+                        <span>
+                            @item.Record.TotalHoursPerRow
+                        </span>
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@if (timeoffApproval is not null && _timeOffItems is not null && _openTimeOffPopUp)
+{
+    <TimeoffRegister TimeoffApproval="@timeoffApproval"
+                     TimeOffItems="@_timeOffItems"
+                     OnClosePopUp="@OnTimeoffAction" />
+}
+
+@*Timeoff Dialog PopUp*@
+<TelerikDialog @bind-Visible="@_openTimeoffDialogPopUp" Width="320px" ShowCloseButton="false">
+    <DialogContent>
+        <p style="text-align: center;">There was a problem creating a timeoff record</p>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton ThemeColor="@(ThemeConstants.Button.ThemeColor.Primary)" OnClick="@(() => { _openTimeoffDialogPopUp = false; })">Ok</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+@*Timeoff Dialog PopUp*@
+
+@code {
+    [Parameter]
+    public List<(int day, bool isWeekendDay)> Days { get; set; }
+    [Parameter]
+    public IEnumerable<TimeoffApproval> TimeOffRecords { get; set; }
+    [Parameter]
+    public EventCallback OnTimeOffAction { get; set; }
+
+    // Temp Variables
+    // Replace this user id value for user id token claim
+    private int systemUserId = 579;
+
+    private TimeoffApproval timeoffApproval;
+    Dictionary<int, string> cssNames = new Dictionary<int, string>()
+    {
+        { 1, "pending" },
+        { 2, "approved" },
+        { 3, "rejected" },
+    };
+    private IEnumerable<TimeOff> _timeOffItems = new List<TimeOff>();
+    private bool _openTimeoffDialogPopUp = false;
+    private bool _openTimeOffPopUp = false;
+
+    protected async override Task OnInitializedAsync()
+    {
+        notificationSrv.OpenTimeOffPopUp += OpenTimeOffPopUp;
+        _timeOffItems = (await timeOffSvc.GetTimeOffs()).Data.Where(x => x.Disabled == false).ToList();
+    }
+
+    public void Dispose()
+    {
+        notificationSrv.OpenTimeOffPopUp -= OpenTimeOffPopUp;
+    }
+
+    private string GetDayHours(decimal time)
+    {
+        return time > 0 ? time.GetDecimalWithFormat(Constants.decimalFormat) : string.Empty;
+    }
+
+    private string GetTimeOffEntryComment(int timeOffId, int day)
+    {
+        return timeSheetSrv.TimesheetData.FirstOrDefault(x => x.TimeOffId == timeOffId)
+                             ?.Entries.FirstOrDefault(y => y.Day == day)?.Comments;
+    }
+
+    private void OpenTimeOffPopUp()
+    {
+        timeoffApproval = new TimeoffApproval();
+        _openTimeOffPopUp = true;
+        StateHasChanged();
+    }
+
+    private void OnTimeOffTextClick(int timeOffId, DateTime date)
+    {
+        timeoffApproval = TimeOffRecords.ToList().Find(x => x.TimeOffId == timeOffId && (date.Date >= x.StartDate.Date && date.Date <= x.EndDate.Date));
+        if (timeoffApproval != null)
+        {
+            _openTimeOffPopUp = true;
+        }
+    }
+
+    private string SetColorStatus(int status)
+    {
+        cssNames.TryGetValue(status, out string value);
+        return value;
+    }
+
+    private async Task OnTimeoffAction(bool response)
+    {
+        if (response)
+        {
+            await OnTimeOffAction.InvokeAsync();   
+        }
+
+        _openTimeOffPopUp = false;
+        timeoffApproval = new TimeoffApproval();
+    }
+}
+

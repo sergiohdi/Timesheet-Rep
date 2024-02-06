@@ -1,6 +1,6 @@
 ﻿@page "/activities"
 
-@inject IActivityService activityService
+@inject IActivityDataService activityService
 @inject IComponentComunicationService notificationSrv
 
 <style>
@@ -58,7 +58,7 @@
                 <GridCommandButton Command="Add" Icon="@FontIcon.Plus">New</GridCommandButton>
             </GridToolBarTemplate>
             <GridSettings>
-                <GridPopupEditSettings MaxWidth="1800px"
+                <GridPopupEditSettings MaxWidth="2800px"
                                    MaxHeight="1200px"
                                    Class="custom-popup">
                 </GridPopupEditSettings>
@@ -75,6 +75,7 @@
                                 <FormItems>
                                     <FormItem Field="ActivityName" LabelText="Name" Class="required-field"></FormItem>
                                     <FormItem Field="ActivityCode" LabelText="Activity Code" Class="required-field"></FormItem>
+                                    <FormItem Field="Description" LabelText="Description" Class="required-field"></FormItem>
                                     <FormItem Field="Status">
                                         <Template>
                                             <div>
@@ -112,6 +113,7 @@
 
                 <GridColumn Field="@nameof(Activity.ActivityName)" Title="Name" Width="140px" />
                 <GridColumn Field="@nameof(Activity.ActivityCode)" Title="Code" Width="140px" />
+                <GridColumn Field="@nameof(Activity.Description)" Title="Description" Width="180px" />              
                 <GridColumn Field="@nameof(Activity.Disabled)" Title="Status" Width="100px">
                     <FilterCellTemplate>
                         <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
@@ -149,6 +151,12 @@
         {
             if (EditItem.ActivityId != default)
             {
+                if (_activities.Any(x => x.ActivityName == EditItem.ActivityName && x.ActivityId != EditItem.ActivityId))
+                {
+                    await Dialogs.AlertAsync("Try another activity name", "An activity with the same name already exist");
+                    return;
+                }
+
                 ApiResponse<bool> result = await activityService.UpdateActivity(EditItem);
                 if (result.Status == ResponseStatus.Success)
                 {
@@ -161,6 +169,13 @@
             }
             else
             {
+
+            if (_activities.Any(x => x.ActivityName == EditItem.ActivityName))
+            {
+                await Dialogs.AlertAsync("Try another activity name", "An activity with the same name already exist");
+                return;
+            }
+
                 ApiResponse<bool> result = await activityService.CreateActivity(EditItem);
                 if (result.Status == ResponseStatus.Success)
                 {
@@ -188,7 +203,7 @@
                     notificationSrv.SendNotification(new Notification
                         {
                             NotificationType = ThemeConstants.Notification.ThemeColor.Warning,
-                            Message = "The activity cannot be deleted as it does have records on the Database."
+                        Message = "The activity cannot be deleted it currently holds records within the database."
                         });
 
                     return;

@@ -1,15 +1,16 @@
 ﻿@page "/users"
 
-@inject IUserService userService
-@inject IActivityService activityService
+@inject IUserDataService userService
+@inject IActivityDataService activityService
 @inject IComponentComunicationService notificationSrv
-@inject IDepartmentService departmentService
-@inject IGeneralService generalService
-@inject ITimesheetTypeService timesheetTypeService
-@inject IEmployeeTypeService employeeTypeService
+@inject IDepartmentDataService departmentService
+@inject IGeneralDataService generalService
+@inject ITimesheetTypeDataService timesheetTypeService
+@inject IEmployeeTypeDataService employeeTypeService
 @inject IJSRuntime JSRuntime
-@inject IUserActivityCodeService userActivityCodeService
+@inject IUserActivityCodeDataService userActivityCodeService
 @inject NavigationManager navManager
+
 
 
 <style>
@@ -91,22 +92,22 @@ else
         <GridColumns>
 
             <GridCommandColumn Width="30px">
-                <GridCommandButton Icon="@FontIcon.Pencil" Class="_btn _btnEdit" OnClick="@((args) => AddOrUpdateUser((args.Item as User).Id))"></GridCommandButton>
+                <GridCommandButton Icon="@FontIcon.Pencil" Class="_btn _btnEdit" OnClick="@((args) => AddOrUpdateUser((args.Item as Timesheet.Client.Models.User).Id))"></GridCommandButton>
                 <GridCommandButton Command="Delete" Icon="@FontIcon.Trash" Class="_btn red _btnDelete"></GridCommandButton>
                 <GridCommandButton Command="Save" Icon="@FontIcon.Save" ShowInEdit="true">Update</GridCommandButton>
                 <GridCommandButton Command="Cancel" Icon="@FontIcon.Cancel" ShowInEdit="true">Cancel</GridCommandButton>
             </GridCommandColumn>
-            <GridColumn Field="@nameof(User.FirstName)" Title="First Name" Width="110px" />
-            <GridColumn Field="@nameof(User.LastName)" Title="Last Name" Width="110px" />
-            <GridColumn Field="@nameof(User.LoginName)" Title="LoginName" Width="110px" />
+            <GridColumn Field="@nameof(Timesheet.Client.Models.User.FirstName)" Title="First Name" Width="110px" />
+            <GridColumn Field="@nameof(Timesheet.Client.Models.User.LastName)" Title="Last Name" Width="110px" />
+            <GridColumn Field="@nameof(Timesheet.Client.Models.User.LoginName)" Title="LoginName" Width="110px" />
 
-            <GridColumn Field="@nameof(User.Disabled)" Title="Status" Width="110px">
+            <GridColumn Field="@nameof(Timesheet.Client.Models.User.Disabled)" Title="Status" Width="110px">
                 <FilterCellTemplate>
                     <TelerikDropDownList Data="@_customFilterData" TextField="Value" ValueField="Key" @bind-Value="selectedValue" OnChange="@FilterTable">
                     </TelerikDropDownList>
                 </FilterCellTemplate>
                 <Template>
-                    @((context as User).Disabled.Value ? "Disabled" : "Enabled")
+                    @((context as Timesheet.Client.Models.User).Disabled.Value ? "Disabled" : "Enabled")
                 </Template>
             </GridColumn>
 
@@ -117,7 +118,7 @@ else
     <TelerikWindow @bind-Visible="_windowVisible"
                Modal="true"
                Width="1600px"
-               MaxHeight="900px"
+               MaxHeight="950px"
                FooterLayoutAlign="@WindowFooterLayoutAlign.End">
         <WindowTitle>USER MAINTENANCE</WindowTitle>
         <WindowContent>
@@ -133,6 +134,12 @@ else
                                 <FormItem Field="FirstName" LabelText="First Name" Class="required-field"></FormItem>
                                 <FormItem Field="LastName" LabelText="Last Name" Class="required-field"></FormItem>
                                 <FormItem Field="LoginName" LabelText="Login" Class="required-field"></FormItem>
+                                <FormItem Field="ExternalId" LabelText="Employee ID" Class="required-field"></FormItem>
+
+                                <FormItem Field="StartDate" LabelText="Start Date" Class="required-field"></FormItem>
+                                <ValidationMessage For="@(() => SelectedUser.StartDate)" />
+
+                                <FormItem Field="EndDate" LabelText="End Date"></FormItem>
 
                                 <FormItem Field="Disabled">
                                     <Template>
@@ -144,12 +151,6 @@ else
                                         </div>
                                     </Template>
                                 </FormItem>
-
-
-                                <FormItem Field="StartDate" LabelText="Start Date" Class="required-field"></FormItem>
-                                <ValidationMessage For="@(() => SelectedUser.StartDate)" />
-
-                                <FormItem Field="EndDate" LabelText="End Date"></FormItem>
 
                                 <FormItem Field="RoleId">
                                     <Template>
@@ -174,8 +175,8 @@ else
                                                      DefaultText="Select a supervisor"
                                                      Filterable="true"
                                                      Data="@_supervisorsList"
-                                                     TextField="@nameof(User.Username)"
-                                                     ValueField="@nameof(User.Id)">
+                                                             TextField="@nameof(Timesheet.Client.Models.User.Username)"
+                                                     ValueField="@nameof(Timesheet.Client.Models.User.Id)">
                                         </TelerikDropDownList>
                                     </Template>
                                 </FormItem>
@@ -227,9 +228,9 @@ else
 
 
 
-                                <FormItem Field="Email" LabelText="Email" Class="required-field"></FormItem>
+                                <FormItem Field="Email" LabelText="Email" Class="required-field"></FormItem>                                
+                                <FormItem Field="JobTitle" LabelText="Job Title" Class="required-field"></FormItem>
                                 <FormItem Field="ReportsTo" LabelText="Reports To"></FormItem>
-                                <FormItem Field="JobTitle" LabelText="Job Title"></FormItem>
 
                             </FormItems>
                             <FormButtons></FormButtons>
@@ -308,13 +309,13 @@ else
 @code {
     [CascadingParameter]
     public DialogFactory Dialogs { get; set; }
-    public List<User> _users = null;
+    public List<Timesheet.Client.Models.User> _users = null;
     public List<Activity> _activities = null;
     public List<Substitute> _substitutes = null;
     private List<UserActivityCodeLight> _userActivities = null;
     private List<Substitute> _userSubstitutes = null;
     private List<Department> _departmentsList = new List<Department>();
-    private List<User> _supervisorsList = new List<User>();
+    private List<Timesheet.Client.Models.User> _supervisorsList = new List<Timesheet.Client.Models.User>();
     private List<EmployeeType> _employeeTypesList = new List<EmployeeType>();
     private EditContext _editContext;
     private List<General> _roleList = new List<General>();
@@ -336,10 +337,10 @@ else
     List<string> Options { get; set; } = new List<string> { "first", "second", "third" };
 
     private string _tempUsers;
-    public User EditItem { get; set; }
-    public TelerikGrid<User> GridRef { get; set; }
+    public Timesheet.Client.Models.User EditItem { get; set; }
+    public TelerikGrid<Timesheet.Client.Models.User> GridRef { get; set; }
 
-    public User SelectedUser { get; set; }
+    public Timesheet.Client.Models.User SelectedUser { get; set; }
 
     private List<KeyValue> _customFilterData = new List<KeyValue>
     {
@@ -357,7 +358,7 @@ else
         await GetActivities();
         await GetDepartmentList();
         await GetSupervisorsList();
-        
+
         await GetEmployeeTypesList();
         await GetRoleList();
         await GetTimeSheetTypesList();
@@ -375,7 +376,7 @@ else
     private async Task GetDepartmentList()
     {
         var response = await departmentService.GetDepartments(false);
-        _departmentsList = response.Data.ToList();
+        _departmentsList = response.Data.Where(x => !x.DisabledSetting.Value).OrderBy(x => x.Name).ToList();        
 
     }
 
@@ -424,7 +425,7 @@ else
 
     private void FilterTable(object item)
     {
-        var users = JsonConvert.DeserializeObject<IEnumerable<User>>(_tempUsers);
+        var users = JsonConvert.DeserializeObject<IEnumerable<Timesheet.Client.Models.User>>(_tempUsers);
 
         switch (item)
         {
@@ -448,7 +449,7 @@ else
     {
         SelectedUser = userId > 0
             ? _users.FirstOrDefault(x => x.Id == userId)
-            : new User();
+            : new Timesheet.Client.Models.User();
         _editContext = new EditContext(SelectedUser);
 
         if (userId > 0)
@@ -462,7 +463,7 @@ else
 
     public async Task DeleteUser(GridCommandEventArgs args)
     {
-        ApiResponse<bool> response = await userService.DeleteUser(((User)args.Item).Id);
+        ApiResponse<bool> response = await userService.DeleteUser(((Timesheet.Client.Models.User)args.Item).Id);
 
         if (response.Status == ResponseStatus.Success)
         {
@@ -471,17 +472,17 @@ else
                 notificationSrv.SendNotification(new Notification
                     {
                         NotificationType = NotificationType.Warning,
-                        Message = "The user cannot be deleted as it does have records on the Database."
+                        Message = "The user cannot be deleted as it currently holds records within the database."
                     });
 
                 return;
             }
-            _users.Remove((User)args.Item);
+            _users.Remove((Timesheet.Client.Models.User)args.Item);
             SetTempActivities();
             notificationSrv.SendNotification(new Notification
                 {
                     NotificationType = NotificationType.Success,
-                    Message = "The user was deleted successfully"
+                    Message = "The user was deleted successfully."
                 });
         }
         else
@@ -489,7 +490,7 @@ else
             notificationSrv.SendNotification(new Notification
                 {
                     NotificationType = NotificationType.Error,
-                    Message = "The user was not deleted"
+                    Message = "The user was not deleted."
                 });
         }
     }
@@ -555,6 +556,14 @@ else
         {
             return;
         }
+
+        if(_users.Any(x => x.LoginName == SelectedUser.LoginName && x.Id != SelectedUser.Id))
+        {
+            ValidationMessageStore valMessageStore = new ValidationMessageStore(_editContext);
+            valMessageStore.Add(_editContext.Field("LoginName"), "This login name already exists");
+            return;
+        }
+
         if (SelectedUser != null)
         {
             if (SelectedUser.Id != default)

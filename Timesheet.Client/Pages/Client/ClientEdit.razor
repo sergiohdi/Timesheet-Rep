@@ -1,11 +1,11 @@
 ﻿@page "/clients/maintenance"
 @page "/clients/maintenance/{Id:int}"
 
-@inject IGeneralService generalService
-@inject IClientService clientService
+@inject IGeneralDataService generalService
+@inject IClientDataService clientService
 @inject IComponentComunicationService notificationSrv
 @inject NavigationManager navManager
-@inject IClientService clientSrv
+@inject IClientDataService clientSrv
 
 <style>
     .colorbutton {
@@ -149,10 +149,18 @@
 </EditForm>
 
 @code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+
     [Parameter]
     public int Id { get; set; } = 0;
     public Client Client { get; private set; } = new Client();
     private string tempClient;
+
+
+    public List<Client> _clientsList = null;
+
+
 
     string clientProcess = "New Client";
 
@@ -166,6 +174,15 @@
         }
 
         Client.Disabled = !Client.Disabled;
+        
+        await GetClients2();
+    }
+
+    private async Task GetClients2()
+    {
+        var response = await clientSrv.GetClients(null);
+        _clientsList = response.Data.ToList();
+        
     }
 
     private async Task<Client> GetClientById(int id)
@@ -176,16 +193,36 @@
     private async Task AddNewClient()
     {
         ApiResponse<bool> response;
-
         Client.Disabled = !Client.Disabled;
 
         if (Client.Id > 0)
-        {
-            response = await clientService.UpdateClient(Client);
+        {                  
+            if (_clientsList != null && _clientsList.Any(x => x.Name == Client.Name && x.Id != Client.Id))
+            {
+                await Dialogs.AlertAsync("Try another client name", "A client with the same name already exists");
+                return;
+            }
+            if (_clientsList != null && _clientsList.Any(x => x.Code == Client.Code && x.Id != Client.Id))
+            {
+                Console.WriteLine("About to display dialog");
+                await Dialogs.AlertAsync("Try another client code", "A client with the same code already exist");
+                return;
+            }           
+                response = await clientService.UpdateClient(Client);            
         }
         else
-        {
-            response = await clientService.CreateClient(Client);
+        {          
+            if (_clientsList != null && _clientsList.Any(x => x.Name == Client.Name))
+            {
+                await Dialogs.AlertAsync("Try another client name", "A client with the same name already exists");
+                return;
+            }
+            if (_clientsList != null && _clientsList.Any(x => x.Code == Client.Code))
+            {
+                await Dialogs.AlertAsync("Try another client code", "A client with the same code already exist");
+                return;
+            }            
+                response = await clientService.CreateClient(Client);          
         }
 
         // Call the notification service

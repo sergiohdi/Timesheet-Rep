@@ -28,7 +28,7 @@ namespace Timesheet.Api.Repositories.Mappers
             CreateMap<UserActivityCode, UserActivityCodeDto>().ReverseMap();
             CreateMap<ProjectHasUser, ProjectTeamUserDTO>().ReverseMap();
             CreateMap<Substitute, SubstituteDto>().ReverseMap();
-            CreateMap<RpTimeSheetData, TimesheetDataDto>()
+            CreateMap<TimesheetData, TimesheetDataDto>()
                 .ForMember(dest => dest.TimesheetId, opt => opt.MapFrom( src => src.TimesheetId))
                 .ForMember(dest => dest.ClientId, opt => opt.MapFrom(src => src.Clientid))
                 .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.Projectid))
@@ -43,6 +43,10 @@ namespace Timesheet.Api.Repositories.Mappers
                 .ForMember(dest => dest.PONumber, opt => opt.MapFrom(src => src.Ttinfo3));
             CreateMap<Approvals, ApprovalDto>().ReverseMap();
             CreateMap<TimesheetControl, TimesheetControlDto>().ReverseMap();
+            CreateMap<TimesheetControl, TimesheetControlApprovalDto>()
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.ApprovalStatus.Appstatusname))
+                .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.ApprovalStatusId == 2));
         }
     }
 }

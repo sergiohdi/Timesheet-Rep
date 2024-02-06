@@ -1,42 +1,78 @@
 ﻿
 
 <style>
+    .navbar-nav {
+        background-color: #000; /* This sets the background color of the menu to black */
+    }
+
     .nav-item .nav-link {
-        color: white; /* Unselected labels will be white */
+        color: #fff; /* Unselected labels will be white */
+        /* font-weight: bold; /* This makes the text bold, increasing visibility */ */ display: flex; /* This will keep the icon and text side by side */
+        align-items: center; /* This will vertically center the text and icon */
+        padding: .5rem 1rem; /* Adjust padding as needed */
     }
-    .nav-item .nav-link.active {
-         background-color: #17a2b8;
-        color: white; /* Change the text color to white for better visibility */
+
+        .nav-item .nav-link.active,
+        .nav-item .nav-link:hover {
+            background-color: #17a2b8; /* This color will be used for the active link's background and on hover */
+            color: #fff; /* This ensures the text color remains white even on the active link */
+        }
+
+    .telerik-icon {
+        margin-right: .0rem; /* Adjust this value as needed */
+        color: gold;
     }
+
 </style>
 
-<ul class="navbar-nav" style="color:black">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="activities">Activities</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="clients">Clients</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="departments">Departments</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="payroll">Payroll</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="projects">Projects</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="team">Team</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="testpayroll">Testpayroll</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="timesheet">Timesheet</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="users">Users</NavLink>
-    </li>
-</ul>
-
+<ul class="navbar-nav" >
+    
+        <li class="nav-item">
+            <NavLink class="nav-link" href="activities">
+                <TelerikFontIcon Icon="@FontIcon.SetColumnPosition" class="telerik-icon" />
+                Activities
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="clients">
+                <TelerikFontIcon Icon="@FontIcon.TellAFriend" class="telerik-icon" />
+                Clients
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="departments">
+                <TelerikFontIcon Icon="@FontIcon.ChevronDoubleRight" class="telerik-icon" />
+                Departments
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="payroll">
+                <TelerikFontIcon Icon="@FontIcon.ListUnorderedSquare" class="telerik-icon" />
+                Payroll
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="projects">
+                <TelerikFontIcon Icon="@FontIcon.ChartAreaRange" class="telerik-icon" />
+                Projects
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="team">
+                <TelerikFontIcon Icon="@FontIcon.CheckOutline" class="telerik-icon" />
+                Team
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="timesheet">
+                <TelerikFontIcon Icon="@FontIcon.ClockArrowRotate" class="telerik-icon" />
+                Timesheet
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="users">
+                <TelerikFontIcon Icon="@FontIcon.User" class="telerik-icon" />
+                Users
+            </NavLink>
+        </li>
+ </ul>

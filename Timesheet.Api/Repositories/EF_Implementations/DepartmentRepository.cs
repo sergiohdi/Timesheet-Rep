@@ -42,12 +42,21 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
         public bool CreateDepartment(DepartmentDto department)
         {
+            //// Check if a department with the same name already exists
+            //var existingDepartment = _db.Department.AsNoTracking().FirstOrDefault(x => x.Name == department.Name);
+            //if (existingDepartment != null)
+            //{
+            //    // Department with the same name already exists
+            //    return false;
+            //}
+
             Department departmentDb = _mapper.Map<Department>(department);
             departmentDb.SetAudit(_httpContextAccessor.HttpContext, true, 1);
 
             _db.Department.Add(departmentDb);
             return _db.SaveChanges() > 0;
         }
+
 
         public bool UpdateDepartment(DepartmentDto department)
         {

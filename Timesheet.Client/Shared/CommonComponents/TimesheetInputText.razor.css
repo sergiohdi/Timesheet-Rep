@@ -17,10 +17,6 @@
     display: none;
 }
 
-.highlight-textbox {
-    border-bottom: 4px solid #2596be;
-}
-
 @media only screen and (max-width: 1400px) {
     .comment-button {
         top: -6px;

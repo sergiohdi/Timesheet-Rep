@@ -3,6 +3,7 @@
     public static class Constants
     {
         public const string base_url = "http://localhost:44368/api";
+        public const string base_url_client = "http://localhost:25008/";
         public const string costCenterEndpoint = "costcenter";
         public const string activityEndpoint = "activity";
         public const string clientEndpoint = "client";
@@ -17,6 +18,7 @@
         public const string substituteEndpoint = "substitute";
         public const string timesheetControlEndpoint = "timesheetcontrol";
         public const string responseError = "An error occurred while processing your request.";
+        public const string decimalFormat = "{0:0.00}";
     }
 
     public static class NotificationType

@@ -9,9 +9,11 @@ namespace Timesheet.Api.Models
     {
         public User()
         {
+            ApprovalHistory = new HashSet<ApprovalHistory>();
             Approvals = new HashSet<Approvals>();
             InverseSubstituteUserNavigation = new HashSet<User>();
             ProjectHasUser = new HashSet<ProjectHasUser>();
+            TimesheetControl = new HashSet<TimesheetControl>();
         }
 
         public int Id { get; set; }
@@ -53,13 +55,15 @@ namespace Timesheet.Api.Models
         public int? EmpTypeId { get; set; }
         public int? SubstituteUser { get; set; }
         public int? SupervisorId { get; set; }
-        public int? TimesheetTemplate { get; set; }
+        public int TimesheetTemplate { get; set; }
 
         public virtual Department Department { get; set; }
         public virtual EmployeeType EmpType { get; set; }
         public virtual User SubstituteUserNavigation { get; set; }
+        public virtual ICollection<ApprovalHistory> ApprovalHistory { get; set; }
         public virtual ICollection<Approvals> Approvals { get; set; }
         public virtual ICollection<User> InverseSubstituteUserNavigation { get; set; }
         public virtual ICollection<ProjectHasUser> ProjectHasUser { get; set; }
+        public virtual ICollection<TimesheetControl> TimesheetControl { get; set; }
     }
 }

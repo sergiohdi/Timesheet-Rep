@@ -68,8 +68,27 @@ namespace Timesheet.Api.Business.Implementations
                 return false;
             }
 
-            return _projectRepository.DeleteProject(project);
+            bool result;
+            try
+            {
+                result = _projectRepository.DeleteProject(project);
+            }
+            
+            catch (System.Exception ex)
+            {
+                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
+                {
+                    throw;
+                }
+
+                result = false;
+            }
+
+            return result;
         }
+
+
+            
 
 
 

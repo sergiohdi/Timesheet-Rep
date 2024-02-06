@@ -7,7 +7,7 @@ namespace Timesheet.Client.Models
         public int Id { get; set; }
         public int? ClientId { get; set; }
         public int? ProjectId { get; set; }
-        public int? ActivityId { get; set; }
+        public int? ActivityId { get; set; }    
         public int? TimeOffId { get; set; }
         public int? ApprovalStatus { get; set; }
         public int? Billable { get; set; }

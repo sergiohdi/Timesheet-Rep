@@ -1,11 +1,11 @@
 ﻿@page "/projects"
-@inject IProjectService projectService
-@inject IClientService clientService
-@inject IUserService userService
-@inject IGeneralService generalService
+@inject IProjectDataService projectService
+@inject IClientDataService clientService
+@inject IUserDataService userService
+@inject IGeneralDataService generalService
 @inject IComponentComunicationService notificationSrv
 @inject IJSRuntime JSRuntime
-@inject IProjectTeamUserService projectTeamUserService
+@inject IProjectTeamUserDataService projectTeamUserService
 @inject NavigationManager navManager
 
 <style>
@@ -43,7 +43,6 @@
         vertical-align: middle;
     }
 
-
 </style>
 
 
@@ -57,27 +56,27 @@ else
 
 
     <TelerikGrid Data=@_projects
-             EditMode="@GridEditMode.Popup"
-             @ref="@GridRef"
-             Pageable="true"
-             PageSize="12"
-             Navigable="true"
-             Resizable="true"
-             Reorderable="true"
-             ConfirmDelete="true"
-             FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
-             OnDelete=@DeleteProject>
+                 EditMode="@GridEditMode.Popup"
+    @ref="@GridRef"
+                 Pageable="true"
+                 PageSize="12"
+                 Navigable="true"
+                 Resizable="true"
+                 Reorderable="true"
+                 ConfirmDelete="true"
+                 FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+                 OnDelete=@DeleteProject>
         <GridToolBarTemplate>
             <GridCommandButton Icon="@FontIcon.Plus" OnClick="@(async() => { await AddOrUpdateProject(0); })">New</GridCommandButton>
         </GridToolBarTemplate>
 
         <GridSettings>
             <GridPopupEditSettings Width="800px"
-                               Height="1100px"
-                               Class="custom-popup">
+                                   Height="1100px"
+                                   Class="custom-popup">
             </GridPopupEditSettings>
             <GridPopupEditFormSettings Orientation="@FormOrientation.Horizontal"
-                                   ButtonsLayout="FormButtonsLayout.Start">
+                                       ButtonsLayout="FormButtonsLayout.Start">
             </GridPopupEditFormSettings>
         </GridSettings>
 
@@ -100,11 +99,11 @@ else
                 <EditorTemplate>
                     @{
                         <TelerikDropDownList Data="@_clients"
-                                     DefaultText="required..."
-                                     Filterable="true"
-                                     TextField=@nameof(Client.Name)
-                                     ValueField=@nameof(Client.Name)
-                                         @bind-Value="@((context as Project).ClientName)" />
+                                             DefaultText="required..."
+                                             Filterable="true"
+                                             TextField=@nameof(Client.Name)
+                                             ValueField=@nameof(Client.Name)
+                        @bind-Value="@((context as Project).ClientName)" />
                     }
                 </EditorTemplate>
             </GridColumn>
@@ -123,11 +122,11 @@ else
     </TelerikGrid>
 
     <TelerikWindow @bind-Visible="_windowVisible"
-               Modal="true"
-               Width="1600px"
-               MinHeight="900px"
-               MaxHeight="900px"
-               FooterLayoutAlign="@WindowFooterLayoutAlign.End">
+                   Modal="true"
+                   Width="1600px"
+                   MinHeight="900px"
+                   MaxHeight="900px"
+                   FooterLayoutAlign="@WindowFooterLayoutAlign.End">
         <WindowTitle>PROJECT MAINTENANCE</WindowTitle>
         <WindowContent>
             <TelerikTabStrip>
@@ -148,11 +147,11 @@ else
                                     <Template>
                                         <label for="ClientId" style="margin-right: 3px;">Client<span style="color: red"> *</span></label>
                                         <TelerikDropDownList @bind-Value="@SelectedProject.ClientId"
-                                                     DefaultText="Select a client"
-                                                     Filterable="true"
-                                                     Data="@_clients"
-                                                     TextField="@nameof(Client.Name)"
-                                                     ValueField="@nameof(Client.Id)">
+                                                             DefaultText="Select a client"
+                                                             Filterable="true"
+                                                             Data="@_clients"
+                                                             TextField="@nameof(Client.Name)"
+                                                             ValueField="@nameof(Client.Id)">
                                         </TelerikDropDownList>
                                     </Template>
                                 </FormItem>
@@ -162,11 +161,11 @@ else
                                     <Template>
                                         <label for="TimeExpenseEntryType" style="margin-right: 3px;">Billable<span style="color: red"> *</span></label>
                                         <TelerikDropDownList @bind-Value="@SelectedProject.TimeExpenseEntryType"
-                                                     DefaultText="Select an option "
-                                                     Filterable="true"
-                                                     Data="@_billableList"
-                                                     TextField="@nameof(General.Value)"
-                                                     ValueField="@nameof(General.Value)">
+                                                             DefaultText="Select an option "
+                                                             Filterable="true"
+                                                             Data="@_billableList"
+                                                             TextField="@nameof(General.Value)"
+                                                             ValueField="@nameof(General.Value)">
                                         </TelerikDropDownList>
                                     </Template>
                                 </FormItem>
@@ -176,11 +175,11 @@ else
                                     <Template>
                                         <label for="UdfProjectType" style="margin-right: 3px;">Project Type<span style="color: red"> *</span></label>
                                         <TelerikDropDownList @bind-Value="@SelectedProject.UdfProjectType"
-                                                     DefaultText="Select an type"
-                                                     Filterable="true"
-                                                     Data="@_projectTypeList"
-                                                     TextField="@nameof(General.Value)"
-                                                     ValueField="@nameof(General.Value)">
+                                                             DefaultText="Select an type"
+                                                             Filterable="true"
+                                                             Data="@_projectTypeList"
+                                                             TextField="@nameof(General.Value)"
+                                                             ValueField="@nameof(General.Value)">
                                         </TelerikDropDownList>
                                     </Template>
                                 </FormItem>
@@ -202,11 +201,11 @@ else
                                         @{
                                             <label for="udfGroups">Audience</label>
                                             <TelerikDropDownList Data="@_audienceList"
-                                                     DefaultText="optional..."
-                                                     Filterable="true"
-                                                     TextField=@nameof(General.Value)
-                                                     ValueField=@nameof(General.Value)
-                                                             @bind-Value="@((EditItem as Project).UdfAudience)" />
+                                                                 DefaultText="optional..."
+                                                                 Filterable="true"
+                                                                 TextField=@nameof(General.Value)
+                                                                 ValueField=@nameof(General.Value)
+                                            @bind-Value="@((EditItem as Project).UdfAudience)" />
                                         }
                                     </Template>
                                 </FormItem>
@@ -215,11 +214,11 @@ else
                                     <Template>
                                         <label for="udfGroups" style="margin-right: 3px;">Groups</label>
                                         <TelerikDropDownList @bind-Value="@SelectedProject.UdfGroups"
-                                                     DefaultText="Select a group"
-                                                     Filterable="true"
-                                                     Data="@_groupsList"
-                                                     TextField="@nameof(General.Value)"
-                                                     ValueField="@nameof(General.Value)">
+                                                             DefaultText="Select a group"
+                                                             Filterable="true"
+                                                             Data="@_groupsList"
+                                                             TextField="@nameof(General.Value)"
+                                                             ValueField="@nameof(General.Value)">
                                         </TelerikDropDownList>
                                     </Template>
                                 </FormItem>
@@ -231,40 +230,40 @@ else
                         </TelerikForm>
                     }
                 </TabStripTab>
-             @if (SelectedProject.Id > 0)
-             {
-                <TabStripTab Title="MEMBERS" Class="whitesmoke-tab">
-                    @{
-                        <div>
-                            <TelerikButton Icon="@nameof(FontIcon.Plus)" OnClick="() => _teamMemberPopUp = true" >Manage Members</TelerikButton>
-                        </div>
-                        <br />
-
-                        @if (_projectTeamMembers != null && _projectTeamMembers.Any())
-                        {                            
-                              <ul>
-                                @foreach (var teamMember in _projectTeamMembers)
-                                {
-
-                                    <div style="display: flex; align-items: center;">
-                                        <div style="width: 100%;font-size: medium ; color: blue;">
-                                            @teamMember.UserName
-                                        </div>
-                                    </div>
-
-                                    <hr style="border: 0.5px solid lightgray;" />
-                                }
-                              </ul>                            
-                        }
-                        else
-                        {
-                            <div style="min-height: 900px;">
-                                <p>No team members have been selected yet.</p>
+                @if (SelectedProject.Id > 0)
+                {
+                    <TabStripTab Title="MEMBERS" Class="whitesmoke-tab">
+                        @{
+                            <div>
+                                <TelerikButton Icon="@nameof(FontIcon.Plus)" OnClick="() => _teamMemberPopUp = true">Manage Members</TelerikButton>
                             </div>
-                        } 
-                    }
-                </TabStripTab>
-             }
+                            <br />
+
+                            @if (_projectTeamMembers != null && _projectTeamMembers.Any())
+                            {
+                                <ul>
+                                    @foreach (var teamMember in _projectTeamMembers)
+                                    {
+
+                                        <div style="display: flex; align-items: center;">
+                                            <div style="width: 100%;font-size: medium ; color: blue;">
+                                                @teamMember.UserName
+                                            </div>
+                                        </div>
+
+                                        <hr style="border: 0.5px solid lightgray;" />
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <div style="min-height: 900px;">
+                                    <p>No team members have been selected yet.</p>
+                                </div>
+                            }
+                        }
+                    </TabStripTab>
+                }
             </TelerikTabStrip>
 
         </WindowContent>
@@ -277,11 +276,11 @@ else
     </TelerikWindow>
 
     <TelerikWindow @bind-Visible="_teamMemberPopUp"
-               Modal="true"
-               Width="1600px"
-               MinHeight="900px"
-               MaxHeight="900px"                
-               FooterLayoutAlign="@WindowFooterLayoutAlign.End">
+                   Modal="true"
+                   Width="1600px"
+                   MinHeight="900px"
+                   MaxHeight="900px"
+                   FooterLayoutAlign="@WindowFooterLayoutAlign.End">
         <WindowTitle>Team Members</WindowTitle>
         <WindowContent>
             <div class="row">
@@ -291,9 +290,9 @@ else
                         <div style="display: flex; align-items: center;">
                             <div style="width: 50%;">
                                 <TelerikCheckBox Value="@(VerifyCheckedProperty(user.Id))"
-                                     TValue="bool"
-                                     Id="@user.Id.ToString()"
-                                     Class="user">
+                                                 TValue="bool"
+                                                 Id="@user.Id.ToString()"
+                                                 Class="user">
                                 </TelerikCheckBox>
                             </div>
                             <div style="width: 100%; font-size: medium;">
@@ -328,18 +327,18 @@ else
     private List<General> _projectTypeList = new List<General>();
     private List<General> _audienceList = new List<General>();
     private List<General> _groupsList = new List<General>();
-    private List<User> _users = null;
+    private List<Timesheet.Client.Models.User> _users = null;
     private List<ProjectTeamUser> _projectTeamMembers = new List<ProjectTeamUser>();
 
+    public List<Department> _departments = null;  
     private EditContext _editContext;
     private string _tempProjects;
     public Project EditItem { get; set; }
     public TelerikGrid<Project> GridRef { get; set; }
 
     private string _tempUsers;
-    public User SelectedUser { get; set; }
+    public Timesheet.Client.Models.User SelectedUser { get; set; }
     private int selectedValue = 0;
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -380,7 +379,7 @@ else
 
     private async Task GetClients()
     {
-        _clients = (await clientService.GetClients(false)).Data.ToList();
+        _clients = (await clientService.GetClients(false)).Data.ToList();        
     }
 
     private async Task GetBillableList()
@@ -413,7 +412,7 @@ else
                 notificationSrv.SendNotification(new Notification
                     {
                         NotificationType = NotificationType.Warning,
-                        Message = "The Project cannot be deleted as it does have records on it."
+                        Message = "The Project cannot be deleted as it currently holds records within the database."
                     });
 
                 return;
@@ -440,37 +439,6 @@ else
         _tempProjects = JsonConvert.SerializeObject(_projects);
     }
 
-    //private async Task OnValidSubmit()
-    //{
-    //    if (EditItem.Id != default)
-    //    {
-    //        ApiResponse<bool> result = await projectService.UpdateProject(EditItem);
-    //        if (result.Status == ResponseStatus.Success)
-    //        {
-    //            notificationSrv.SendNotification(new Notification
-    //                {
-    //                    NotificationType = NotificationType.Success,
-    //                    Message = "The project has been updated successfully"
-    //                });
-    //        }
-    //    }
-    //    else
-    //    {
-    //        ApiResponse<bool> result = await projectService.CreateProject(EditItem);
-    //        if (result.Status == ResponseStatus.Success)
-    //        {
-    //            notificationSrv.SendNotification(new Notification
-    //                {
-    //                    NotificationType = NotificationType.Success,
-    //                    Message = "The project has been created successfully"
-    //                });
-    //        }
-    //    }
-
-    //    await ExitEditAsync();
-    //    await GetProjects();
-    //    StateHasChanged();
-    //}
 
     private async Task SaveProjectInfo()
     {
@@ -479,11 +447,25 @@ else
         {
             return;
         }
+
         if (SelectedProject != null)
         {
             if (SelectedProject.Id != default)
             {
+                if (_projects.Any(x => x.Name == SelectedProject.Name && x.Id != SelectedProject.Id))
+                {
+                    await Dialogs.AlertAsync("Try another project name", "A project with the same project name already exist");
+                    return;
+                }
+
+                if (_projects.Any(x => x.ProjectCode == SelectedProject.ProjectCode && x.Id != SelectedProject.Id))
+                {
+                    await Dialogs.AlertAsync("Try another code name", "A project with the same project code already exist");
+                    return;
+                }
+                
                 var result = await projectService.UpdateProject(SelectedProject);
+
                 if (result.Status == ResponseStatus.Success)
                 {
                     notificationSrv.SendNotification(new Notification
@@ -507,6 +489,18 @@ else
             }
             else
             {
+                if (_projects.Any(x => x.Name == SelectedProject.Name))               
+                {
+                    await Dialogs.AlertAsync("Try another project name", "A project with the same project name already exist");
+                    return;
+                }
+
+                if (_projects.Any(x => x.ProjectCode == SelectedProject.ProjectCode))
+                {
+                    await Dialogs.AlertAsync("Try another code name", "A project with the same project code already exist");
+                    return;
+                }
+
                 var result = await projectService.CreateProject(SelectedProject);
                 if (result.Status == ResponseStatus.Success)
                 {
@@ -528,7 +522,7 @@ else
             }
         }
 
-        
+
         CloseWindow();
         await ExitEditAsync();
         await GetProjects();
@@ -613,7 +607,7 @@ else
             : new Project();
         _editContext = new EditContext(SelectedProject);
 
-        if  (SelectedProject.Id > 0)
+        if (SelectedProject.Id > 0)
         {
             await GetProjectTeamMembers(Id);
         }
@@ -656,10 +650,10 @@ else
     {
         List<int> usersId = await JSRuntime.InvokeAsync<List<int>>("getAllCheckedUsers");
         await projectTeamUserService.AddProjectTeamMembers(SelectedProject.Id, usersId);
-        
+
         CloseWindowSecondary();
         await GetProjectTeamMembers(SelectedProject.Id);
-        StateHasChanged();        
+        StateHasChanged();
     }
 
 }

@@ -2,10 +2,9 @@
 
 <input type="text"
        value=@InValue
-       class="custom-form-control @(HighlightTextbox ? "highlight-textbox": "")"
+       class="custom-form-control"
        style="width: 100%;"
        id="@($"R-{Id}")"
-       onfocus="showRegularCommentButton(this)"
        @onblur=onTextblured
        @ref=timesheetInput />
 <div id="@($"D-{Id}")"

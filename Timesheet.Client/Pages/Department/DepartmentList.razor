@@ -1,9 +1,9 @@
 ﻿@page "/departments"
 
-@inject IDepartmentService departmentService
-@inject IParentDepartmentService parentDepartmentService
-@inject IGeneralService generalService
-@inject ICostCenterService costCenterService
+@inject IDepartmentDataService departmentService
+@inject IParentDepartmentDataService parentDepartmentService
+@inject IGeneralDataService generalService
+@inject ICostCenterDataService costCenterService
 @inject IComponentComunicationService notificationSrv
 @inject NavigationManager navManager
 
@@ -157,11 +157,12 @@ else
     public DialogFactory Dialogs { get; set; }
     public List<Department> _departments = null;
     public Department EditItem { get; set; }
+    public TelerikGrid<Department> GridRef { get; set; }
+    
     private List<ParentDepartment> _parentList = new List<ParentDepartment>();
     private List<CostCenter> _costCenterList = new List<CostCenter>();
-    public TelerikGrid<Department> GridRef { get; set; }
-
     private string _tempDepartments;
+    private EditContext _editContext;
 
     protected override async Task OnInitializedAsync()
     {
@@ -181,6 +182,14 @@ else
     {
         if (EditItem.Id != default)
         {
+
+            //Check if a department with the same name already exists on Edit action
+            if (_departments.Any(x => x.Name == EditItem.Name && x.Id != EditItem.Id))           
+            {
+                await Dialogs.AlertAsync("Try another department name", "A department with the same name already exist");
+                return;
+            }
+
             ApiResponse<bool> result = await departmentService.UpdateDepartment(EditItem);
             if (result.Status == ResponseStatus.Success)
             {
@@ -193,6 +202,14 @@ else
         }
         else
         {
+            // Check if a department with the same name already exists on Create action
+            if (_departments.Any(x => x.Name == EditItem.Name))
+            {
+                await Dialogs.AlertAsync("Try another department name", "A department with the same name already exist");
+                return;
+            }
+
+
             ApiResponse<bool> result = await departmentService.CreateDepartment(EditItem);
             if (result.Status == ResponseStatus.Success)
             {
@@ -209,6 +226,7 @@ else
         StateHasChanged();
     }
 
+
     public async Task DeleteDepartment(GridCommandEventArgs args)
     {
         ApiResponse<bool> response = await departmentService.DeleteDepartment(((Department)args.Item).Id);
@@ -220,7 +238,7 @@ else
                 notificationSrv.SendNotification(new Notification
                     {
                         NotificationType = ThemeConstants.Notification.ThemeColor.Warning,
-                        Message = "The Department cannot be deleted as it does have records on the Database."
+                        Message = "The Department cannot be deleted as it currently holds records within the database."
                     });
 
                 return;

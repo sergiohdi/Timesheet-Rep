@@ -1,6 +1,6 @@
 ﻿@page "/clients"
 
-@inject IClientService clientSrv
+@inject IClientDataService clientSrv
 @inject IComponentComunicationService notificationSrv
 @inject NavigationManager navManager
 
@@ -85,7 +85,7 @@ else
                 notificationSrv.SendNotification(new Notification
                     {
                         NotificationType = NotificationType.Warning,
-                        Message = "The Client cannot be deleted as it does have projects on it."
+                        Message = "The Client cannot be deleted as it currently holds records within the database."
                     });
 
                 return;

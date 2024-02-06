@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Linq;
 using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Models.Requests;
@@ -78,7 +79,7 @@ namespace Timesheet.Api.Controllers
                 }
 
                 // Update timesheet records
-                if (request.Action == TimesheetItemAction.Update)
+                if (request.Action == TimesheetItemAction.Update && request.TimesheetItem.Entries.Exists(x => x.Id > 0))
                 {
                     _timesheetDataBusiness.UpdateTimesheetBaseInformation(request.TimesheetItem, request.Property);
                 }

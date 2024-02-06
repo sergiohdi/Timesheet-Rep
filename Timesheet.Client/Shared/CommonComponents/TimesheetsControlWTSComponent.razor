@@ -1,0 +1,250 @@
+﻿@using Telerik.SvgIcons
+@using System.ComponentModel.DataAnnotations
+@inject ITimesheetControlDataService timesheetControlService
+@inject IComponentComunicationService notificationSrv
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .center-checkbox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Hide the existing labels */
+    .k-dateinput-start .k-label,
+    .k-dateinput-end .k-label {
+        font-size: 0;
+        color: transparent;
+    }
+
+        /* Add custom labels */
+        .k-dateinput-start .k-label::before {
+            content: "From:";
+            font-size: 14px; /* Adjust the font size as needed */
+            color: black; /* Adjust the color as needed */
+        }
+
+        .k-dateinput-end .k-label::before {
+            content: "To:";
+            font-size: 14px; /* Adjust the font size as needed */
+            color: black; /* Adjust the color as needed */
+        }
+
+    .my-custom-datepicker .k-input {
+        width: 196px; /* or any width that suits your design */
+    }
+    .telerik-icon3 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: dimgray;
+    }
+
+    .telerik-icon4 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: goldenrod;
+    }
+
+    .telerik-icon5 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: green;
+    }
+
+    .telerik-icon6 {
+        font-size: 22px; /* Adjust the font size as needed */
+        color: red;
+    }
+
+</style>
+
+@if (_timesheetsRequests == null)
+{
+    <TelerikLoaderContainer Visible="@( _timesheetsRequests == null )" Text="Loading Timesheets..." />
+}
+else
+{
+
+    <h4>Timesheets</h4>
+
+    <TelerikGrid Data=@_timesheetsRequests
+                 EditMode="@GridEditMode.Inline"
+    @ref="@GridRef"
+                 Pageable="true"
+                 PageSize="12"
+                 Navigable="true"
+                 ConfirmDelete="true"
+                 FilterMode="Telerik.Blazor.GridFilterMode.FilterRow">
+        <GridToolBarTemplate>
+            <div style="display: flex;">
+                <SelectCalendar ShowLinks="true" OnReturnDates="SetDates" />
+
+                <div style="align-self: flex-end; margin-left: 16px; display: flex;">
+                    <div style="margin-right: 10px;">
+                         <TelerikButton OnClick="@ApproveTimesheetsSelected" Enabled="@IsButtonEnabled">Approve</TelerikButton>
+                    </div>
+                    <div style="margin-right: 10px;">
+                         <TelerikButton OnClick="@ReopenTimesheetsSelected" Enabled="@IsButtonEnabled">Reopen</TelerikButton>
+                    </div>
+                    @if (IsSupervisor == false)
+                    {
+                     <div>
+                        <TelerikButton OnClick="@DeleteTimesheetsSelected" Enabled="@IsButtonEnabled">Delete</TelerikButton>
+                     </div>
+                    }
+                </div>
+            </div>
+        </GridToolBarTemplate>
+
+        <GridSettings></GridSettings>
+        <GridColumns>
+            <GridCommandColumn Width="15px">
+
+                @{
+                    var currentTimesheet = context as TimesheetControlApproval;
+                    <div class="center-checkbox">
+                        <TelerikCheckBox Value="currentTimesheet.IsSelected" ValueChanged="@((bool isSelected) => OnRowSelected(currentTimesheet, isSelected))"></TelerikCheckBox>
+                    </div>
+
+                }
+
+            </GridCommandColumn>
+            <GridColumn Title="Timesheet Period" Width="140px">
+                <Template>
+                    @{
+                        var item = context as TimesheetControlApproval;
+                        var formattedDateRange = $"{item.StartDate:MMM dd, yyyy} - {item.EndDate:MMM dd, yyyy}";
+                        var period = item.StartDate.Day == 1 ? 1 : 2;
+                        var url = $"{Constants.base_url_client}/timesheet?y={item.StartDate.Year}&m={item.StartDate.Month}&p={period}&u={item.UserId}";
+                    }
+                    <a href="@url" style="color:#1f5ff3;">@formattedDateRange</a>
+                </Template>
+
+            </GridColumn>
+            <GridColumn Field="@nameof(TimesheetControlApproval.UserName)" Title="User" Width="140px" />            
+            <GridColumn Field="@nameof(TimesheetControlApproval.EndDate)" Title="Due Date" Width="110px" Sortable="true" DisplayFormat="{0:MMM dd, yyyy}" />
+            <GridColumn Field="@nameof(TimesheetControlApproval.StatusName)" Title="Status" Width="90px">
+                <Template>
+                    @{
+                        var status = (TimesheetControlApproval)context;
+                    }
+                        <StatusButton StatusName="@status.StatusName" />
+                </Template>
+            </GridColumn>
+
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+
+    [Parameter]
+    public bool IsSupervisor { get; set; } = false;
+  
+
+    private List<TimesheetControlApproval> _timesheetsRequests = null;
+    public TelerikGrid<TimesheetControlApproval> GridRef { get; set; }
+    private bool IsButtonEnabled { get; set; } = false;
+    private DateTime _startDate = DateTime.Now.Day <= 15 ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 16);
+    private DateTime _endDate = DateTime.Now.Day <= 15 ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15) : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
+
+
+    protected override async Task OnInitializedAsync()
+    {   
+        await GetTimesheetControlRequests();
+    }
+
+    private void OnRowSelected(TimesheetControlApproval currentTimesheet, bool isSelected)
+    {
+        currentTimesheet.IsSelected = isSelected;
+        IsButtonEnabled = _timesheetsRequests.Any(t => t.IsSelected);
+        StateHasChanged();
+    }
+
+    private async Task GetTimesheetControlRequests()
+    {
+        var response = await timesheetControlService.GetTimesheetControlRequests(_startDate, _endDate, IsSupervisor);
+        response.Data.ToList().ForEach(x =>
+        {
+            x.StartDateString = x.StartDate.ToString("MMMM dd yyyy");
+            x.EndDateString = x.EndDate.ToString("MMMM dd yyyy");
+        });
+
+        _timesheetsRequests = response.Data.ToList();
+    }
+
+    private async Task ApproveTimesheetsSelected()
+    {  
+        IsButtonEnabled = false;
+        List<int> selectedTimesheets = _timesheetsRequests.Where(t => t.IsSelected).Select(x => x.TimesheetPeriodId).ToList();
+
+        if (selectedTimesheets.Any())
+        {
+            var response = await timesheetControlService.ApproveTimesheetsRequests(selectedTimesheets);
+            await GetTimesheetControlRequests();            
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReopenTimesheetsSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimesheets = _timesheetsRequests.Where(t => t.IsSelected).Select(x => x.TimesheetPeriodId).ToList();
+
+        if (selectedTimesheets.Any())
+        {
+            var response = await timesheetControlService.ReopenTimesheetsRequests(selectedTimesheets);
+            await GetTimesheetControlRequests();           
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteTimesheetsSelected()
+    {
+        IsButtonEnabled = false;
+        List<int> selectedTimesheets = _timesheetsRequests.Where(t => t.IsSelected).Select(x => x.TimesheetPeriodId).ToList();
+
+        if (selectedTimesheets.Any())
+        {
+            var response = await timesheetControlService.DeleteTimesheetsRequests(selectedTimesheets);
+            await GetTimesheetControlRequests();           
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetDates((DateTime startDate, DateTime endDate) dates)
+    {
+        _startDate = dates.startDate;
+        _endDate = dates.endDate;
+        await GetTimesheetControlRequests();
+    }
+}
+
+
+
+

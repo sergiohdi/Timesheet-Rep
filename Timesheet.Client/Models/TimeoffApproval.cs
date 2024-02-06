@@ -4,15 +4,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Timesheet.Client.Models
 {
-    public class TimeoffApproval : IValidatableObject
+    public class TimeoffApproval :  Approval, IValidatableObject
     {
-        public int ApprovalId { get; set; }
-        public int UserId { get; set; }
-        public int ApprovalStatusId { get; set; }
-        public int? TimeOffId { get; set; }
-        public int ApprovalType { get; set; }
-        public DateTime StartDate { get; set; } = DateTime.Now;
-        public DateTime EndDate { get; set; } = DateTime.Now.AddDays(1);
+        public TimeoffApproval()
+        {
+            StartDate = DateTime.Now;
+            EndDate = DateTime.Now;
+        }
+
+        public int TimeOffId { get; set; }
         public decimal? Duration { get; set; }
         public string Comments { get; set; }
 
@@ -28,7 +28,7 @@ namespace Timesheet.Client.Models
                  ));
             }
 
-            if (Duration <= 0.10M)
+            if (Duration is null || Duration <= 0.10M)
             {
                 errorsResult.Add(new ValidationResult(
                     errorMessage: "Duration is required",

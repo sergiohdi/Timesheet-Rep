@@ -1,15 +1,17 @@
-﻿const divs = document.getElementsByClassName("comment-button");
+﻿document.body.addEventListener("click", (e) => {
+    const target = e.target.classList;
+    if (target.contains("custom-form-control")) {
+        showRegularCommentButton(e.target);
+    } else {
+        hideAllCommentButtons();
+    }
+})
+
+const divs = document.getElementsByClassName("comment-button") || [];
 
 function showRegularCommentButton(input) {
     const divId = input.id.replace("R", "D");
     
-    hideAllCommentButtons();
-    showCommentButton(divId);
-}
-
-function showTimeOffCommentButton(input) {
-    const divId = input.id.replace("T", "DT");
-
     hideAllCommentButtons();
     showCommentButton(divId);
 }

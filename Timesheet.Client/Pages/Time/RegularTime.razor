@@ -1,0 +1,483 @@
+﻿@inject IClientDataService clientSrv
+@inject IUserDataService userSrv
+@inject IGeneralDataService generalSrv
+@inject ITimesheetDataService timesheetDataSvc
+@inject IComponentComunicationService notificationSrv
+@inject IApprovalDataService approvalSrv
+@inject ITimesheetService timeSheetSrv
+@inject IJSRuntime js
+
+<table class="table table-bordered time-grid">
+    <thead class="thead-time-grid">
+        <tr>
+            <th style="width: 30px;"></th>
+            <th class="row-client">Client</th>
+            <th class="row-project">Project</th>
+            <th class="row-activity">Activity</th>
+            @foreach (var item in Days)
+            {
+                <th class="row-day @(item.isWeekendDay ? "timeoff" : "")">
+                    @(item.day)
+                </th>
+            }
+            <th style="width: 50px">Total</th>
+            <th style="width: 65px">P.O. Number</th>
+            <th class="row-billable">Billable</th>
+            <th style="width: 70px">Location</th>
+        </tr>
+    </thead>
+    <tbody class="tbody-time-grid">
+        @if (timeSheetSrv.TimesheetData != null)
+        {
+            @foreach (var item in timeSheetSrv.TimesheetData.Where(x => !x.IsTimeOff).Select((x, i) => new { Index = (i + 1), Record = x }).ToList())
+            {
+                <tr>
+                    <td class="icon-cell">
+                        <span>
+                            @if (item.Record.IsNewRecord)
+                            {
+                                <i title="Pending to save" class="fas fa-save" style="color:red;"></i>
+                            }
+                            else
+                            {
+                                <i title="Delete row" class="fas fa-trash-alt" @onclick="@(() => OpenDeleteDialog(item.Record))"></i>
+                            }
+                        </span>
+                    </td>
+                    <td>
+                        <TelerikDropDownList Data="@_clients"
+                                             @bind-Value="item.Record.ClientId"
+                                             TextField="@nameof(Client.Name)"
+                                             ValueField="@nameof(Client.Id)"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             Width="100%"
+                                             Filterable="true"
+                                             FilterOperator="StringFilterOperator.Contains"
+                                             FilterDebounceDelay="200"
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Client, true))">
+                            <DropDownListSettings>
+                                <DropDownListPopupSettings Width="400px"></DropDownListPopupSettings>
+                            </DropDownListSettings>
+                        </TelerikDropDownList>
+                    </td>
+                    <td>
+                        <TelerikDropDownList Data="@ProjectList.Where(x => x.ClientId == 0 || x.ClientId == item.Record.ClientId)"
+                                             @bind-Value="item.Record.ProjectId"
+                                             TextField="@nameof(Project.Name)"
+                                             ValueField="@nameof(Project.Id)"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             Width="100%"
+                                             Filterable="true"
+                                             FilterOperator="StringFilterOperator.Contains"
+                                             FilterDebounceDelay="200"
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Project, true))">
+                            <DropDownListSettings>
+                                <DropDownListPopupSettings Width="400px"></DropDownListPopupSettings>
+                            </DropDownListSettings>
+                        </TelerikDropDownList>
+                    </td>
+                    <td>
+                        <TelerikDropDownList Data="@_userActivities"
+                                             @bind-Value="@item.Record.ActivityId"
+                                             TextField="@nameof(Activity.ActivityName)"
+                                             ValueField="@nameof(Activity.ActivityId)"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             Width="100%"
+                                             Filterable="true"
+                                             FilterOperator="StringFilterOperator.Contains"
+                                             FilterDebounceDelay="200"
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Activity, true))">
+                            <DropDownListSettings>
+                                <DropDownListPopupSettings Width="400px"></DropDownListPopupSettings>
+                            </DropDownListSettings>
+                        </TelerikDropDownList>
+                    </td>
+                    @foreach (var entry in item.Record.Entries)
+                    {
+                        <td>
+                            @if (!item.Record.IsNewRecord)
+                            {
+                                <div class="cell-container @(ValidateEntryComment(entry.Comments) ? "highlight-textbox": "")">
+                                    <TimesheetInputText InValue=@GetDayHours(entry.TotalHours)
+                                                        Id=@($"{item.Record.ClientId}-{item.Record.ProjectId}-{item.Record.ActivityId}-{entry.Day}")
+                                                        OpenPopup=@_openCommentPopUp
+                                                        OnEmitValue=ValidateSaveTimesheetRecord
+                                                        OnOpenPopup=OpenPopUp />
+                                </div>
+                            }
+                        </td>
+                    }
+                    <td class="total">
+                        <span>
+                            @item.Record.TotalHoursPerRow
+                        </span>
+                    </td>
+                    <td>
+                        <input type="text"
+                               class="custom-form-control"
+                               @bind="item.Record.PONumber"
+                               style="width: 100%;"
+                               @onblur="@(() => OnBaseRecordChanged(item.Record, Property.PONumber, false))" />
+                    </td>
+                    <td>
+                        <TelerikDropDownList Data=BillingStatusList
+                                             @bind-Value="item.Record.Billable"
+                                             TextField="@nameof(General.Value)"
+                                             ValueField="@nameof(General.GralId)"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             Width="100%"
+                                             Enabled="item.Record.EnableBillableDrop"
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Billing, false))">
+                            <DropDownListSettings>
+                                <DropDownListPopupSettings Width="120px"></DropDownListPopupSettings>
+                            </DropDownListSettings>
+                        </TelerikDropDownList>
+                    </td>
+                    <td>
+                        <TelerikDropDownList Data="@_locations"
+                                             @bind-Value="item.Record.Location"
+                                             TextField="@nameof(General.Value)"
+                                             ValueField="@nameof(General.Value)"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             Width="100%"
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Location, false))">
+                            <DropDownListSettings>
+                                <DropDownListPopupSettings Width="120px"></DropDownListPopupSettings>
+                            </DropDownListSettings>
+                        </TelerikDropDownList>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@*Comment PopUp*@
+<TelerikWindow Resizable="false"
+               Modal="true"
+               Width="350px"
+               Height="335px"
+               Visible="@_openCommentPopUp"
+               VisibleChanged="@VisibleChangedHandler">
+    <WindowTitle>
+        <strong>Timesheet</strong>
+    </WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Close"></WindowAction>
+    </WindowActions>
+    <WindowContent>
+        <div class="form-group">
+            <label for="comment">Comments</label>
+            <textarea id="comment" class="form-control" rows="5" @bind="_comment"></textarea>
+        </div>
+        <div class="form-group">
+            @if (_disableSaveButton)
+            {
+                <button class="btn btn-info" type="button" disabled>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span class="sr-only">Loading...</span>
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-info" title="Save time" @onclick=SaveTimesheetRecord>
+                    <i class="fas fa-save"></i>
+                </button>
+            }
+        </div>
+    </WindowContent>
+</TelerikWindow>
+@*Comment PopUp*@
+
+@*Delete Dialog PopUp*@
+<TelerikDialog @bind-Visible="@_openDeleteDialogPopUp" Width="320px" ShowCloseButton="false">
+    <DialogContent>
+        <p style="text-align: center;">Are you sure you want to delete this record?</p>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="@(() => { _openDeleteDialogPopUp = false; })">No</TelerikButton>
+        <TelerikButton ThemeColor="@(ThemeConstants.Button.ThemeColor.Primary)" OnClick="DeleteTimesheetItem">Yes</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+@*Delete Dialog PopUp*@
+
+@code {
+    [Parameter]
+    public List<(int day, bool isWeekendDay)> Days { get; set; }
+    [Parameter]
+    public List<General> BillingStatusList { get; set; }
+    [Parameter]
+    public List<ProjectLight> ProjectList { get; set; }
+    [Parameter]
+    public EventCallback OnRegularTimeCreated { get; set; }
+
+
+    // Temp Variables
+    // Replace this user id value for user id token claim
+    private int systemUserId = 579;
+
+    private List<ClientLight> _clients = new List<ClientLight>
+    {
+        new ClientLight { Id = 0, Name = "Select a client"}
+    };
+    private IEnumerable<General> _locations = null;
+    private IEnumerable<TimeOff> _timeOffItems = null;
+    private List<UserActivityCodeLight> _userActivities = new List<UserActivityCodeLight>
+    {
+        new UserActivityCodeLight { ActivityId = 0, ActivityName = "Select an activty"}
+    };
+    private bool _openCommentPopUp = false;
+    private bool _openDeleteDialogPopUp = false;
+    private bool _closeCommentPopup = false;
+    private bool _disableSaveButton = false;
+    private string _comment = string.Empty;
+    private TimesheetItem recordSelected;
+    private TimesheetInput _inputInfo;
+    private Property selectedProperty;
+    private string _tempString;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var tasks = new List<Task>
+        {
+            clientSrv.GetClientsForDropDown().ContinueWith(task => _clients.AddRange(task.Result.Data)),
+            userSrv.GetActivitiesByUserForDropDown(systemUserId).ContinueWith(task => _userActivities.AddRange(task.Result.Data)),
+            generalSrv.GetGeneralValues("Location").ContinueWith(task => _locations = task.Result.Data.ToList())
+        };
+
+        await Task.WhenAll(tasks);
+        _tempString = SetTempString();
+    }
+
+    private void CalculateHours() =>
+        timeSheetSrv.TimesheetData.ForEach(record => record.TotalHoursPerRow = record.Entries.Sum(x => x.TotalHours).GetDecimalWithFormat(Constants.decimalFormat));
+
+    private void SetBillingOption(TimesheetItem item)
+    {
+        string billingType = ProjectList.FirstOrDefault(x => x.Id == item.ProjectId).TimeExpenseEntryType;
+        if (billingType.Equals("Billable & Non-Billable"))
+        {
+            return;
+        }
+
+        item.Billable = billingType.Equals("Non-Billable")
+            ? BillingStatusList.FirstOrDefault(x => x.Value.Equals("Non-Billable"))?.GralId
+            : BillingStatusList.FirstOrDefault(x => !x.Value.Equals("Non-Billable"))?.GralId;
+        item.EnableBillableDrop = false;
+    }
+
+    private void VisibleChangedHandler(bool isVisible)
+    {
+        _comment = null;
+        _openCommentPopUp = isVisible;
+    }
+
+    private async Task ValidateSaveTimesheetRecord(TimesheetInput inputInfo)
+    {
+        _inputInfo = inputInfo;
+
+        if (_openCommentPopUp) return;
+
+        await SaveTimesheetRecord();
+    }
+
+    private async Task SaveTimesheetRecord()
+    {
+        _disableSaveButton = true;
+
+        decimal.TryParse(_inputInfo.Value, out decimal hours);
+        string[] idValues = _inputInfo.Id.Split('-');
+        int day = Convert.ToInt16(idValues[4]);
+
+        TimesheetItem record = timeSheetSrv.TimesheetData.FirstOrDefault(x => !x.IsTimeOff &&
+                                                         x.ClientId.Value == Convert.ToInt16(idValues[1]) &&
+                                                         x.ProjectId.Value == Convert.ToInt16(idValues[2]) &&
+                                                         x.ActivityId.Value == Convert.ToInt16(idValues[3]));
+
+        if (record.IsNewRecord)
+        {
+            _disableSaveButton = false;
+            return;
+        }
+
+        TimesheetEntry entry = record.Entries.FirstOrDefault(x => x.Day == day);
+        if (entry.TotalHours == hours && (!_openCommentPopUp || entry.Comments == _comment))
+        {
+            _disableSaveButton = false;
+            return;
+        }
+        entry.TotalHours = hours;
+        entry.Comments = !_openCommentPopUp ? entry.Comments : _comment;
+
+        CalculateHours();
+
+        ApiResponse<long> response = await timesheetDataSvc.UpdateTimesheetHours(systemUserId, new TimesheetItem
+            {
+                Id = record.Id,
+                ClientId = record.ClientId,
+                ProjectId = record.ProjectId,
+                ActivityId = record.ActivityId,
+                TimeOffId = record.TimeOffId,
+                ApprovalStatus = record.ApprovalStatus,
+                Billable = record.Billable == 11 ? 1 : 0,
+                Location = record.Location,
+                PONumber = record.PONumber,
+                Entries = new List<TimesheetEntry> { entry }
+            });
+
+        if (response.Status == ResponseStatus.Success)
+        {
+            entry.Id = response.Data;
+            if (entry.Id == 0)
+            {
+                entry.Comments = string.Empty;
+            }
+            await OnRegularTimeCreated.InvokeAsync();
+        }
+
+        _disableSaveButton = false;
+        _openCommentPopUp = false;
+        _comment = string.Empty;
+        _inputInfo = null;
+    }
+
+    private string GetDayHours(decimal time)
+    {
+        return time != 0 ? time.GetDecimalWithFormat(Constants.decimalFormat) : string.Empty;
+    }
+
+    private bool ValidateEntryComment(string comments)
+    {
+        return !string.IsNullOrEmpty(comments);
+    }
+
+    private string GetRegularEntryComment(TimesheetItem filters, int day)
+    {
+        return timeSheetSrv.TimesheetData.FirstOrDefault(x => x.ClientId == filters.ClientId && x.ProjectId == filters.ProjectId && x.ActivityId == filters.ActivityId)
+                             ?.Entries.FirstOrDefault(y => y.Day == day)?.Comments;
+    }
+
+    private (RecordType recordType, int clientId, int projectId, int activityId, int timeOffId, int day) GetDataFromId(string id)
+    {
+        string[] idParts = id.Split('-');
+        return (
+            idParts[0].Equals("R") ? RecordType.Regular : RecordType.TimeOff,
+            idParts[0].Equals("R") ? Convert.ToInt16(idParts[1]) : 0,
+            idParts[0].Equals("R") ? Convert.ToInt16(idParts[2]) : 0,
+            idParts[0].Equals("R") ? Convert.ToInt16(idParts[3]) : 0,
+            idParts[0].Equals("T") ? Convert.ToInt16(idParts[1]) : 0,
+            idParts[0].Equals("R") ? Convert.ToInt16(idParts[4]) : Convert.ToInt16(idParts[2])
+        );
+    }
+
+    private async Task OnBaseRecordChanged(TimesheetItem item, Property property, bool isBaseProperty)
+    {
+        if (property == Property.Client)
+        {
+            item.ProjectId = 0;
+        }
+
+        string compareString = SetTempString();
+
+        // This validation is a fix for a known issue on kendo dropdownlist, please do not remove this one
+        // https://docs.telerik.com/blazor-ui/knowledge-base/common-onchange-fires-twice
+        if (selectedProperty == property && _tempString == compareString)
+        {
+            return;
+        }
+
+        selectedProperty = property;
+        _tempString = compareString;
+
+        if (item.ProjectId != 0 && property == Property.Project)
+        {
+            SetBillingOption(item);
+        }
+
+        if (item.ClientId == 0 || item.ProjectId == 0 || item.ActivityId == 0)
+        {
+            return;
+        }
+
+        if (timeSheetSrv.TimesheetData.FirstOrDefault(x => x.Id != item.Id &&
+                                               x.ClientId == item.ClientId &&
+                                               x.ProjectId == item.ProjectId &&
+                                               x.ActivityId == item.ActivityId &&
+                                               !x.IsNewRecord) != null)
+        {
+            notificationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Warning,
+                    Message = "There is already a record with the same configuration"
+                });
+            return;
+        }
+
+        await timesheetDataSvc.UpdateTimesheetBaseProperties(new UpdateTimesheetBasePropertiesRequest
+            {
+                UserId = systemUserId,
+                TimesheetItem = item,
+                Action = item.IsNewRecord ? TimesheetItemAction.Add : TimesheetItemAction.Update,
+                Property = property,
+                IsBaseProperty = isBaseProperty
+            });
+
+        item.IsNewRecord = false;
+        StateHasChanged();
+    }
+
+    private void OpenDeleteDialog(TimesheetItem record)
+    {
+        recordSelected = record;
+        _openDeleteDialogPopUp = true;
+    }
+
+    private void OpenPopUp(TimesheetInput inputInfo)
+    {
+        _inputInfo = inputInfo;
+
+        var idInfo = GetDataFromId(_inputInfo.Id);
+        _comment = GetRegularEntryComment(new TimesheetItem
+            {
+                ClientId = idInfo.clientId,
+                ProjectId = idInfo.projectId,
+                ActivityId = idInfo.activityId
+            },
+        idInfo.day);
+
+        _openCommentPopUp = true;
+    }
+
+    private async Task DeleteTimesheetItem()
+    {
+        _openDeleteDialogPopUp = false;
+        await timesheetDataSvc.DeleteTimesheetRecord(systemUserId, recordSelected);
+        await OnRegularTimeCreated.InvokeAsync();
+        recordSelected = null;
+
+        notificationSrv.SendNotification(new Notification
+            {
+                NotificationType = NotificationType.Success,
+                Message = "Record has been deleted successfully"
+            });
+    }
+
+    private string SetTempString()
+    {
+        if (timeSheetSrv.TimesheetData == null || !timeSheetSrv.TimesheetData.Any())
+        {
+            return string.Empty;
+        }
+
+        return JsonConvert.SerializeObject(timeSheetSrv.TimesheetData.Select(x => new
+        {
+            x.ClientId,
+            x.ProjectId,
+            x.ActivityId,
+            x.Billable,
+            x.Location,
+            x.PONumber
+        }));
+    }
+}
+

@@ -2,6 +2,7 @@
 using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
+using Timesheet.Api.Repositories.Repositories.EF_Implementations;
 
 namespace Timesheet.Api.Business.Implementations
 {
@@ -71,7 +72,23 @@ namespace Timesheet.Api.Business.Implementations
                 return false;
             }
 
-            return _activityRepository.DeleteActivity(activity);
+            bool result;
+            try
+            {
+                result = _activityRepository.DeleteActivity(activity);
+            }
+
+            catch (System.Exception ex)
+            {
+                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
+                {
+                    throw;
+                }
+
+                result = false;
+            }
+
+            return result;            
         }
     }
 }

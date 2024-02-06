@@ -25,65 +25,56 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
         public IEnumerable<TimesheetDataDto> GetTimesheetData(TimesheetRequestDto request)
         {
-            try
-            {
-                int day = request.Period == 2 ? 16 : 1;
-                DateTime dateFilter = new(request.Year, request.Month, day);
+            int day = request.Period == 2 ? 16 : 1;
+            DateTime dateFilter = new(request.Year, request.Month, day);
 
-                return _db.RpTimeSheetData.AsNoTracking()
-                                          .Where(x => x.Userid == request.UserId && x.Timesheetperiod == dateFilter)
-                                          .Select(x => new TimesheetDataDto
-                                          {
-                                              // TimesheetId = x.TimesheetId,
-                                              ClientId = x.Clientid.Value,
-                                              ProjectId = x.Projectid.Value,
-                                              ActivityId = x.ActivityId.Value,
-                                              TimeOffId = x.Tasktimeoffid.Value,
-                                              EntryDate = x.Entrydate,
-                                              TotalHours = x.TotalHours.Value,
-                                              Comments = x.Comments,
-                                              ApprovalStatus = x.Approvalstatus.Value,
-                                              Billable = x.Billable.Value,
-                                              Location = x.Ttinfo2,
-                                              PONumber = x.Ttinfo3 ?? string.Empty
-                                          })
-                                          .ToList();
-            }
-            catch (Exception ex)
-            {
-
-                throw;
-            }
-            
+            return _db.TimesheetData.AsNoTracking()
+                                      .Where(x => x.Userid == request.UserId && x.Timesheetperiod == dateFilter)
+                                      .Select(x => new TimesheetDataDto
+                                      {
+                                          TimesheetId = x.TimesheetId,
+                                          ClientId = x.Clientid.Value,
+                                          ProjectId = x.Projectid.Value,
+                                          ActivityId = x.ActivityId.Value,
+                                          TimeOffId = x.Tasktimeoffid.Value,
+                                          EntryDate = x.Entrydate,
+                                          TotalHours = x.TotalHours.Value,
+                                          Comments = x.Comments,
+                                          ApprovalStatus = x.Approvalstatus.Value,
+                                          Billable = x.Billable.Value,
+                                          Location = x.Ttinfo2,
+                                          PONumber = x.Ttinfo3 ?? string.Empty
+                                      })
+                                      .ToList();
         }
-
+        
         public TimesheetDataDto GetTimesheetRecord(long timesheetId)
         {
-            return _mapper.Map<TimesheetDataDto>(_db.RpTimeSheetData.FirstOrDefault(x => x.TimesheetId == timesheetId));
+            return _mapper.Map<TimesheetDataDto>(_db.TimesheetData.FirstOrDefault(x => x.TimesheetId == timesheetId));
         }
 
-        public void UpdateTimesheetBaseInformation(TimesheetItemDto item, Property property, object propertyData, int oldBillableInfo)
+        public void UpdateTimesheetBaseInformation(TimesheetItemDto item, Dictionary<Property, object> propertyData, int oldBillableInfo)
         {
             long[] ids = item.Entries.Select(x => x.Id).ToArray();
-            int billable = item.Billable == 9 ? 1 : 0;
+            int billable = item.Billable == 11 ? 1 : 0;
             StringBuilder strQuery = new();
             strQuery.Append(@$"UPDATE [dbo].[RP_TimeSheetData] SET ttinfo3 = '{item.PONumber}', billable = {billable}, ttinfo2 = '{item.Location}'");
 
-            if (property == Property.Client)
+            if (propertyData.ContainsKey(Property.Client))
             {
-                ClientDto client = (ClientDto)propertyData;
+                ClientDto client = (ClientDto)propertyData[Property.Client];
                 strQuery.Append(@$", clientid = {client.Id}, clientname = '{client.Name}', clientcode = '{client.Code}'");
             }
 
-            if (property == Property.Project)
+            if (propertyData.ContainsKey(Property.Project))
             {
-                ProjectDto project = (ProjectDto)propertyData;
+                ProjectDto project = (ProjectDto)propertyData[Property.Project];
                 strQuery.Append(@$", projectid = {project.Id}, projectname = '{project.Name}', projectcode = '{project.ProjectCode}', taskname1 = '{project.Name}', fulltaskname = '{project.Name}'");
             }
 
-            if (property == Property.Activity)
+            if (propertyData.ContainsKey(Property.Activity))
             {
-                ActivityDto activity = (ActivityDto)propertyData;
+                ActivityDto activity = (ActivityDto)propertyData[Property.Activity];
                 strQuery.Append(@$", ActivityId = {activity.ActivityId}, ActivityName = '{activity.ActivityName}', ActivityCode = '{activity.ActivityCode}'");
             }
 
@@ -98,15 +89,21 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
             strQuery.Append(@$" WHERE timesheetid IN ({string.Join(",", ids.Where(id => id != 0))})");
 
-            string asd = strQuery.ToString();
-
             _db.Database.ExecuteSqlRaw(strQuery.ToString());
         }
 
         public void DeleteTimesheetRecords(long[] ids)
         {
-            _db.RpTimeSheetData.Where(x => ids.Contains(x.TimesheetId))
+            _db.TimesheetData.Where(x => ids.Contains(x.TimesheetId))
                                .ExecuteDelete();
+        }
+
+        public bool DeleteTimesheetRecords(List<DateTime> periods, List<int> userIds)
+        {
+            //_db.TimesheetData.Where(x => periods.Contains(x.Timesheetperiod) && userIds.Contains(x.Userid))
+            //    .ExecuteUpdate(s => s.SetProperty(x => x.Approvalstatus, status));
+
+            return true;
         }
 
         public long SetTimesheetRecord(Dictionary<string, object> data)
@@ -139,9 +136,9 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                 employeeType = data["employeetype"] != null ? (EmployeeTypeDto)data["employeetype"] : null;
             }
 
-            RpTimeSheetData timesheetRecord = entry.Id > 0
-                ? _db.RpTimeSheetData.FirstOrDefault(x => x.TimesheetId == entry.Id)
-                : _db.RpTimeSheetData.FirstOrDefault(x => x.Entrydate == entry.EntryDate &&
+            TimesheetData timesheetRecord = entry.Id > 0
+                ? _db.TimesheetData.FirstOrDefault(x => x.TimesheetId == entry.Id)
+                : _db.TimesheetData.FirstOrDefault(x => x.Entrydate == entry.EntryDate &&
                                                                       x.Userid == userId &&
                                                                       x.Clientid == record.ClientId &&
                                                                       x.Projectid == record.ProjectId &&
@@ -149,6 +146,16 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
             if (timesheetRecord != null)
             {
+                if (timesheetRecord.Billable == 1)
+                {
+                    timesheetRecord.BillableHours = entry.TotalHours;
+                }
+                else 
+                {
+                    timesheetRecord.NonBillableHours = entry.TotalHours;
+                }
+
+                timesheetRecord.ProjectHours = entry.TotalHours;
                 timesheetRecord.TotalHours = entry.TotalHours;
                 timesheetRecord.Comments = entry.Comments;
                 timesheetRecord.Cellcomments = entry.Comments;
@@ -158,7 +165,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                 DateTime startDate = DateFunctions.GetPeriodStartDate(entry.EntryDate.Year, entry.EntryDate.Month, entry.Day);
                 DateTime endDate = DateFunctions.GetPeriodLastDate(entry.EntryDate.Year, entry.EntryDate.Month, entry.Day);
 
-                timesheetRecord = new RpTimeSheetData
+                timesheetRecord = new TimesheetData
                 {
                     Timesheetperiod = startDate,
                     Startdate = startDate,
@@ -211,7 +218,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                     Clientcode = client?.Code
                 };
 
-                _db.RpTimeSheetData.Add(timesheetRecord);
+                _db.TimesheetData.Add(timesheetRecord);
             }
 
             _db.SaveChanges();
@@ -220,44 +227,105 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
         public bool ValidateTimesheetByProjectId(int projectId)
         {
-            return _db.RpTimeSheetData.Any(x => x.Projectid == projectId);
+            return _db.TimesheetData.Any(x => x.Projectid == projectId);
         }
 
         public bool ValidateTimesheetByActivityId(int activityId)
         {
-            return _db.RpTimeSheetData.Any(x => x.ActivityId == activityId);
+            return _db.TimesheetData.Any(x => x.ActivityId == activityId);
         }
 
         public bool ValidateTimesheetByUserId(int userId)
         {
-            return _db.RpTimeSheetData.Any(x => x.Userid == userId);
+            return _db.TimesheetData.Any(x => x.Userid == userId);
         }
 
         public void DeleteTimesheetRecord(long id)
         {
-            _db.RpTimeSheetData.Where(x => x.TimesheetId == id)
+            _db.TimesheetData.Where(x => x.TimesheetId == id)
                                .ExecuteDelete();
         }
 
-        public bool SaveTimeOffRecords(IEnumerable<RpTimeSheetData> timeOffRecords) 
+        public bool SaveTimeOffRecords(IEnumerable<TimesheetData> timeOffRecords) 
         {
-            _db.RpTimeSheetData.AddRange(timeOffRecords);
+            _db.TimesheetData.AddRange(timeOffRecords);
             return _db.SaveChanges() > 0;
         }
 
         public void DeleteTimesheetOffRecords(int id, DateTime startDate, DateTime endDate)
         {
-            _db.RpTimeSheetData.Where(
+            _db.TimesheetData.Where(
                 x => x.Tasktimeoffid == id && x.Entrydate >= startDate.Date && x.Entrydate <= endDate.Date)
                 .ExecuteDelete();
         }
 
-        public bool UpdateApprovedRecords(List<DateTime> periods, List<int> userIds)
+        public bool UpdateTimesheetRecords(int id, DateTime startDate, DateTime endDate, int status)
         {
-            _db.RpTimeSheetData.Where(x => periods.Contains(x.Timesheetperiod) && userIds.Contains(x.Userid))
-                .ExecuteUpdate(s => s.SetProperty(x => x.Approvalstatus, 2));
+            _db.TimesheetData.Where(
+                x => x.Tasktimeoffid == id && x.Entrydate >= startDate.Date && x.Entrydate <= endDate.Date)
+                .ExecuteUpdate(s => s.SetProperty(x => x.Approvalstatus, status));
 
             return true;
+        }
+
+        public bool DeleteTimesheetRecord(DateTime period, int userId)
+        {
+            _db.TimesheetData.Where(x => x.Timesheetperiod == period && x.Userid == userId)
+                .ExecuteDelete();
+
+            return true;
+        }
+        
+        public bool UpdateRegularRecords(int id, DateTime startDate, DateTime endDate, int status)
+        {
+            _db.TimesheetData.Where(
+                x => x.TimesheetId == id && x.Entrydate >= startDate.Date && x.Entrydate <= endDate.Date)
+                .ExecuteUpdate(s => s.SetProperty(x => x.Approvalstatus, status));
+
+            return true;
+        }
+
+        public bool UpdateRegularRecords(int userId, DateTime period, int status)
+        {
+            _db.TimesheetData.Where(x => 
+                                                            x.Userid == userId && 
+                                                            x.Timesheetperiod == period.Date && 
+                                                            x.Clientid != null)
+                               .ExecuteUpdate(s => 
+                                        s.SetProperty(x => x.Approvalstatus, status));
+
+            return true;
+        }
+
+        public bool DeleteTimesheetOnlyRows(DateTime period, int userId)
+        {
+            //Delete only timesheet rows excluding timeoffs            
+            _db.TimesheetData.Where(x => x.Timesheetperiod == period && x.Userid == userId && x.Tasktimeoffid == null)
+                .ExecuteDelete();
+
+            return true;
+        }
+
+        public IEnumerable<TimesheetDataDto> GetRegularTimeData(DateTime period, int userId)
+        {
+            return _db.TimesheetData.AsNoTracking()
+                                      .Where(x => x.Timesheetperiod == period && x.Userid == userId && x.Clientid != null)
+                                      .Select(x => new TimesheetDataDto
+                                      {
+                                          TimesheetId = x.TimesheetId,
+                                          ClientId = x.Clientid.Value,
+                                          ProjectId = x.Projectid.Value,
+                                          ActivityId = x.ActivityId.Value,
+                                          TimeOffId = x.Tasktimeoffid.Value,
+                                          EntryDate = x.Entrydate,
+                                          TotalHours = x.TotalHours.Value,
+                                          Comments = x.Comments,
+                                          ApprovalStatus = x.Approvalstatus.Value,
+                                          Billable = x.Billable.Value,
+                                          Location = x.Ttinfo2,
+                                          PONumber = x.Ttinfo3 ?? string.Empty
+                                      })
+                                      .ToList();
         }
     }
 }

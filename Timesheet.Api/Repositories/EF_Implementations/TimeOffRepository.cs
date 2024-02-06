@@ -20,7 +20,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
         public IEnumerable<TimeOffDto> GetTimeOffList()
         {
-            return _mapper.Map<IEnumerable<TimeOffDto>>(_db.TimeOff.AsNoTracking().OrderBy(x => x.TimeOffName).ToList());
+            return _mapper.Map<IEnumerable<TimeOffDto>>(_db.TimeOff.OrderBy(x => x.TimeOffCode).ToList());
         }
 
         public TimeOffDto GetTimeOffById(int timeOffId)

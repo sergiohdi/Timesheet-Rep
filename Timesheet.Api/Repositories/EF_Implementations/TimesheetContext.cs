@@ -20,6 +20,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
         }
 
         public virtual DbSet<Activity> Activity { get; set; }
+        public virtual DbSet<ApprovalHistory> ApprovalHistory { get; set; }
         public virtual DbSet<ApprovalStatus> ApprovalStatus { get; set; }
         public virtual DbSet<Approvals> Approvals { get; set; }
         public virtual DbSet<Client> Client { get; set; }
@@ -30,10 +31,10 @@ namespace Timesheet.Api.Repositories.EF_Implementations
         public virtual DbSet<ParentDepartment> ParentDepartment { get; set; }
         public virtual DbSet<Project> Project { get; set; }
         public virtual DbSet<ProjectHasUser> ProjectHasUser { get; set; }
-        public virtual DbSet<RpTimeSheetData> RpTimeSheetData { get; set; }
         public virtual DbSet<Substitute> Substitute { get; set; }
         public virtual DbSet<TimeOff> TimeOff { get; set; }
         public virtual DbSet<TimesheetControl> TimesheetControl { get; set; }
+        public virtual DbSet<TimesheetData> TimesheetData { get; set; }
         public virtual DbSet<TimesheetType> TimesheetType { get; set; }
         public virtual DbSet<TranslationMappingsActivityGrouping> TranslationMappingsActivityGrouping { get; set; }
         public virtual DbSet<User> User { get; set; }
@@ -69,6 +70,22 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                     .HasColumnName("UpdatedIP");
 
                 entity.Property(e => e.UpdatedMacAddress).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<ApprovalHistory>(entity =>
+            {
+                entity.ToTable("ApprovalHistory", "dbo");
+
+                entity.Property(e => e.Id).ValueGeneratedNever();
+
+                entity.Property(e => e.ActionDate).HasColumnType("datetime");
+
+                entity.Property(e => e.Comments).IsUnicode(false);
+
+                entity.HasOne(d => d.IdUserNavigation)
+                    .WithMany(p => p.ApprovalHistory)
+                    .HasForeignKey(d => d.IdUser)
+                    .HasConstraintName("FK__ApprovalH__Comme__1B9317B3");
             });
 
             modelBuilder.Entity<ApprovalStatus>(entity =>
@@ -359,12 +376,57 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                     .HasConstraintName("FK__ProjectHa__UserI__2DE6D218");
             });
 
-            modelBuilder.Entity<RpTimeSheetData>(entity =>
+            modelBuilder.Entity<Substitute>(entity =>
+            {
+                entity.HasKey(e => e.SubId);
+
+                entity.ToTable("Substitute", "dbo");
+            });
+
+            modelBuilder.Entity<TimeOff>(entity =>
+            {
+                entity.ToTable("TimeOff", "dbo");
+
+                entity.Property(e => e.TimeOffCode).HasMaxLength(255);
+
+                entity.Property(e => e.TimeOffName)
+                    .IsRequired()
+                    .HasMaxLength(255);
+            });
+
+            modelBuilder.Entity<TimesheetControl>(entity =>
+            {
+                entity.HasKey(e => e.TimesheetPeriodId);
+
+                entity.ToTable("TimesheetControl", "dbo");
+
+                entity.Property(e => e.TimesheetPeriodId).HasColumnName("TimesheetPeriodID");
+
+                entity.Property(e => e.EndDate).HasColumnType("datetime");
+
+                entity.Property(e => e.StartDate).HasColumnType("datetime");
+
+                entity.Property(e => e.TimesheetPeriod).HasColumnType("datetime");
+
+                entity.HasOne(d => d.ApprovalStatus)
+                    .WithMany(p => p.TimesheetControl)
+                    .HasForeignKey(d => d.ApprovalStatusId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__Timesheet__Appro__0697FACD");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.TimesheetControl)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_TimesheetControl_User");
+            });
+
+            modelBuilder.Entity<TimesheetData>(entity =>
             {
                 entity.HasKey(e => e.TimesheetId)
                     .HasName("PK_RP_TimeSheetData_temp1");
 
-                entity.ToTable("RP_TimeSheetData", "dbo");
+                entity.ToTable("TimesheetData", "dbo");
 
                 entity.Property(e => e.TimesheetId).HasColumnName("timesheetId");
 
@@ -669,39 +731,6 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                 entity.Property(e => e.Username)
                     .HasMaxLength(255)
                     .HasColumnName("username");
-            });
-
-            modelBuilder.Entity<Substitute>(entity =>
-            {
-                entity.HasKey(e => e.SubId);
-
-                entity.ToTable("Substitute", "dbo");
-            });
-
-            modelBuilder.Entity<TimeOff>(entity =>
-            {
-                entity.ToTable("TimeOff", "dbo");
-
-                entity.Property(e => e.TimeOffCode).HasMaxLength(255);
-
-                entity.Property(e => e.TimeOffName)
-                    .IsRequired()
-                    .HasMaxLength(255);
-            });
-
-            modelBuilder.Entity<TimesheetControl>(entity =>
-            {
-                entity.HasKey(e => e.TimesheetPeriodId);
-
-                entity.ToTable("TimesheetControl", "dbo");
-
-                entity.Property(e => e.TimesheetPeriodId).HasColumnName("TimesheetPeriodID");
-
-                entity.Property(e => e.EndDate).HasColumnType("datetime");
-
-                entity.Property(e => e.StartDate).HasColumnType("datetime");
-
-                entity.Property(e => e.TimesheetPeriod).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<TimesheetType>(entity =>

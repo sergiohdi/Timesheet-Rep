@@ -1,0 +1,153 @@
+﻿<div style="align-self: flex-end;">
+    <button class="link-button" @onclick="GoToPreviousPeriod" title="Previous Period" style="font-size: 20px; color: black;">&lt;&lt;</button>
+    <TelerikDatePicker @bind-Value="startDate" Format="MMM dd, yyyy" Width="150px" />
+    <span style="font-size: 20px;">&nbsp;-&nbsp;</span>
+    <TelerikDatePicker @bind-Value="endDate" Format="MMM dd, yyyy" Width="150px" />
+    <button class="link-button" @onclick="GoToNextPeriod" title="Next Period" style="font-size: 20px; color: black;">&gt;&gt;&nbsp;</button>
+    @if (ShowLinks == true)
+    {
+        <a class="link-button" @onclick="CurrentPeriod" title="Current Period" style="font-size: 12px; color: blue; ">Current &nbsp;</a>
+        <a class="link-button" @onclick="PreviousPeriod" title="Previous Period" style="font-size: 12px; color: blue; ">Previous</a>
+    }   
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<(DateTime startDate, DateTime endDate)> OnReturnDates { get; set; }
+
+    [Parameter]
+    public bool ShowLinks { get; set; } = false;
+
+    private DateTime _startDate = DateTime.Now.Day <= 15
+        ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1) 
+        : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 16);
+    private DateTime _endDate = DateTime.Now.Day <= 15 
+        ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15) 
+        : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
+    
+        private bool isCalendarButtonTriggered = false;
+
+    private DateTime startDate
+    {
+        get => _startDate;
+        set
+        {
+            if (_startDate != value)
+            {
+                _startDate = value;
+                if (_endDate < _startDate)
+                {
+                    _endDate = _startDate;
+                }
+                StartEndDateChanged();
+            }
+        }
+    }
+
+    private DateTime endDate
+    {
+        get => _endDate;
+        set
+        {
+            if (_endDate != value)
+            {
+                if (value < _startDate)
+                {
+                    _endDate = _startDate;
+                }
+                else
+                {
+                    _endDate = value;
+                }
+                StartEndDateChanged();
+            }
+        }
+    }
+
+    private void StartEndDateChanged()
+    {
+        if (isCalendarButtonTriggered)
+        {
+            return;
+        }
+
+        OnReturnDates.InvokeAsync((startDate, endDate));
+    }
+
+    private void GoToPreviousPeriod()
+    {
+        isCalendarButtonTriggered = true;
+        if (startDate.Day == 1)
+        {
+            // If the start date is the 1st, set the previous period to be the second half of the previous month.
+            var previousMonth = startDate.AddMonths(-1);
+            startDate = new DateTime(previousMonth.Year, previousMonth.Month, 16);
+            endDate = new DateTime(previousMonth.Year, previousMonth.Month, DateTime.DaysInMonth(previousMonth.Year, previousMonth.Month));
+        }
+        else
+        {
+            // If the start date is the 16th or later, set the previous period to be the first half of the same month.
+            startDate = new DateTime(startDate.Year, startDate.Month, 1);
+            endDate = new DateTime(startDate.Year, startDate.Month, 15);
+        }
+
+        isCalendarButtonTriggered = false;
+        OnReturnDates.InvokeAsync((startDate, endDate));
+    }
+
+    private void GoToNextPeriod()
+    {
+        isCalendarButtonTriggered = true;
+        if (endDate.Day <= 15)
+        {
+            // If the end date is the 15th or earlier, set the next period to be the second half of the same month.
+            startDate = new DateTime(endDate.Year, endDate.Month, 16);
+            endDate = new DateTime(endDate.Year, endDate.Month, DateTime.DaysInMonth(endDate.Year, endDate.Month));
+        }
+        else
+        {
+            // If the end date is later than the 15th, set the next period to be the first half of the next month.
+            var nextMonth = endDate.AddMonths(1);
+            startDate = new DateTime(nextMonth.Year, nextMonth.Month, 1);
+            endDate = new DateTime(nextMonth.Year, nextMonth.Month, 15);
+        }
+
+        isCalendarButtonTriggered = false;
+        OnReturnDates.InvokeAsync((startDate, endDate));
+    }
+
+    private void CurrentPeriod()
+    {
+        isCalendarButtonTriggered = true;
+        startDate = DateTime.Now.Day <= 15
+            ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1)
+            : new DateTime(DateTime.Now.Year, DateTime.Now.Month, 16);
+        endDate = DateTime.Now.Day <= 15
+            ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15)
+            : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
+        isCalendarButtonTriggered = false;
+        OnReturnDates.InvokeAsync((startDate, endDate));
+    }
+
+    private void PreviousPeriod()
+    {
+        isCalendarButtonTriggered = true;
+        if (startDate.Day == 1)
+        {
+            
+            var previousMonth = DateTime.Now.AddMonths(-1);
+            startDate = new DateTime(previousMonth.Year, previousMonth.Month, 16);
+            endDate = new DateTime(previousMonth.Year, previousMonth.Month, DateTime.DaysInMonth(previousMonth.Year, previousMonth.Month));
+        }
+        else
+        {
+            
+            var presentMonth = DateTime.Now;
+            startDate = new DateTime(presentMonth.Year, presentMonth.Month, 1);
+            endDate = new DateTime(presentMonth.Year, presentMonth.Month, 15);
+        }
+
+        isCalendarButtonTriggered = false;
+        OnReturnDates.InvokeAsync((startDate, endDate));
+    }
+}

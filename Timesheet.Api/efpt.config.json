@@ -20,6 +20,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[ApprovalHistory]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Approvals]",
          "ObjectType": 0
       },
@@ -60,10 +64,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[RP_TimeSheetData]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[Substitute]",
          "ObjectType": 0
       },
@@ -73,6 +73,10 @@
       },
       {
          "Name": "[dbo].[TimesheetControl]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TimesheetData]",
          "ObjectType": 0
       },
       {
@@ -109,6 +113,7 @@
    "UseLegacyPluralizer": false,
    "UseManyToManyEntity": false,
    "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
    "UseNoObjectFilter": false,
    "UseNodaTime": false,
    "UseNullableReferences": false,

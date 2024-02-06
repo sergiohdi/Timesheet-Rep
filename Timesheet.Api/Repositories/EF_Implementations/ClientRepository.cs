@@ -28,8 +28,10 @@ namespace Timesheet.Api.Repositories.EF_Implementations
             IQueryable<Client> result = _db.Client.AsNoTracking().OrderBy(x => x.Name);
 
             if (disabled != null)
-            {
-                result = result.Where(x => x.Disabled == disabled);
+            {                
+                result = result.Where(x => x.Disabled == disabled.Value);
+
+                //result = disabled.Value ? result.Where(x => x.Disabled != false) : result.Where(x => x.Disabled == false);
             }
 
             return _mapper.Map<IEnumerable<ClientDto>>(result.ToList());

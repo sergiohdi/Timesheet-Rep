@@ -1,27 +1,38 @@
 ﻿@page "/team"
 
-@inject IComponentComunicationService notificationSrv
-@inject IApprovalService approvalService
+<style>
+    .whitesmoke-tab {
+        background-color: whitesmoke;
+    }
 
+    .blue-tab {
+        background-color: deepskyblue;
+    }
+</style>
 
+<h3>Team</h3>
+
+<TelerikTabStrip>
+    <TabStripTab Title="Timesheets" Class="whitesmoke-tab">
+        <TimesheetsSupervisorComponent />
+    </TabStripTab>
+    <TabStripTab Title="Time Off" Class="whitesmoke-tab" >
+        <TimeoffComponent IsSupervisor="true" />
+    </TabStripTab>
+</TelerikTabStrip>
 
 @code {
-    private int _tempSuperv = 8;
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    private bool _windowVisible = true;
 
-    protected override async Task OnInitializedAsync()
+    private void OpenWindow()
     {
-        await GetRegularTimeRequests();
+        _windowVisible = true;
     }
-
-    private async Task GetRegularTimeRequests()
+    private void CloseWindow()
     {
-        // Todo get regular time requests
-    }
-
-    private async Task ApproveSelected()
-    {
-        // Todo implement Supervisor Approval
+        _windowVisible = false;
     }
 }
-
 

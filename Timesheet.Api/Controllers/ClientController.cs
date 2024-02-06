@@ -29,7 +29,7 @@ namespace Timesheet.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured getting clients");
+                return StatusCode(500, "An error occurred getting clients");
             }
         }
 
@@ -43,7 +43,7 @@ namespace Timesheet.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured getting clients");
+                return StatusCode(500, "An error occurred getting clients");
             }
         }
 
@@ -57,7 +57,7 @@ namespace Timesheet.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured getting client");
+                return StatusCode(500, "An error occurred getting client");
             }
         }
 
@@ -79,7 +79,7 @@ namespace Timesheet.Api.Controllers
                 }
                 else 
                 {
-                    result = StatusCode(500, "An error occured creating client");
+                    result = StatusCode(500, "An error occurred creating client");
                 }
             }
 
@@ -96,7 +96,7 @@ namespace Timesheet.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured updating client");
+                return StatusCode(500, "An error occurred updating client");
             }
         }
 
@@ -110,7 +110,7 @@ namespace Timesheet.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured deleting a client");
+                return StatusCode(500, "An error occurred deleting a client");
             }
         }
     }

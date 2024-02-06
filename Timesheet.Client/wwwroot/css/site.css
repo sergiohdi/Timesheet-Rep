@@ -1,5 +1,12 @@
 @import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
 
+:root {
+    --not-submited: #2471a3;
+    --pending: #f1c40f;
+    --approved: #28b463;
+    --rejected: #e74c3c;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Font Awesome 5 Free';
 }
@@ -223,6 +230,132 @@ app {
         margin-left: 0;
     }
 }
+
+/*Timesheet grids styles*/
+.time-grid {
+    table-layout: fixed;
+    font-size: 0.80rem;
+}
+
+.custom-margin-table {
+    margin-top: -16px;
+}
+
+.thead-time-grid tr {
+    text-align: center;
+    font-size: 0.78rem;
+}
+
+    .thead-time-grid tr th {
+        padding: 8px;
+        background-color: #e3eef4;
+        border-color: #dee2e6;
+        color: #212529;
+    }
+
+
+.tbody-time-grid tr td {
+    padding: 3px 2px;
+    background-color: #f1eded;
+}
+
+    .tbody-time-grid tr td.icon-cell {
+        padding: 8px;
+        text-align: center
+    }
+
+        .tbody-time-grid tr td.icon-cell span {
+            cursor: pointer;
+        }
+
+    .tbody-time-grid tr td.total {
+        padding-top: 10px;
+        text-align: center;
+    }
+
+.cell-container {
+    position: relative;
+}
+
+.row-client {
+    width: 180px;
+}
+
+.row-project {
+    width: 180px;
+}
+
+.row-activity {
+    width: 180px;
+}
+
+.row-timeoff {
+    width: 540px !important;
+}
+
+.row-billable {
+    width: 70px;
+}
+
+.row-day {
+    width: 40px;
+}
+
+.timeoff-title {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    margin-top: 6px;
+    padding-left: 10px;
+    font-size: 12.5px;
+}
+
+.timeoff-status {
+    height: 12px;
+    width: 12px;
+    margin-top: 1px;
+    border-radius: 10px;
+}
+
+.timeoff {
+    background-color: #d3dfe6 !important;
+}
+
+.timeoff-cell {
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 4px;
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 1400px) {
+    .time-grid {
+        width: 120%;
+    }
+
+    .row-client {
+        width: 140px;
+    }
+
+    .row-project {
+        width: 180px;
+    }
+
+    .row-activity {
+        width: 220px;
+    }
+
+    .row-timeoff {
+        width: 540px !important;
+    }
+
+    .row-billable {
+        width: 130px;
+    }
+}
+/*Timesheet grids styles*/
 
 @media (min-width: 768px) {
     app {
