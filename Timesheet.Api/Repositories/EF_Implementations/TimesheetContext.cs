@@ -76,16 +76,18 @@ namespace Timesheet.Api.Repositories.EF_Implementations
             {
                 entity.ToTable("ApprovalHistory", "dbo");
 
-                entity.Property(e => e.Id).ValueGeneratedNever();
-
                 entity.Property(e => e.ActionDate).HasColumnType("datetime");
 
                 entity.Property(e => e.Comments).IsUnicode(false);
 
+                entity.Property(e => e.UserName)
+                    .HasMaxLength(500)
+                    .IsUnicode(false);
+
                 entity.HasOne(d => d.IdUserNavigation)
                     .WithMany(p => p.ApprovalHistory)
                     .HasForeignKey(d => d.IdUser)
-                    .HasConstraintName("FK__ApprovalH__Comme__1B9317B3");
+                    .HasConstraintName("FK__ApprovalH__IdUse__1E6F845E");
             });
 
             modelBuilder.Entity<ApprovalStatus>(entity =>
@@ -806,6 +808,8 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                 entity.Property(e => e.LoginName).HasMaxLength(200);
 
                 entity.Property(e => e.OfflineEmail).HasMaxLength(100);
+
+                entity.Property(e => e.Password).HasMaxLength(500);
 
                 entity.Property(e => e.PlpmarkUp).HasColumnName("PLPMarkUp");
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Timesheet.Api.Models.DTOs;
 
 namespace Timesheet.Api.Repositories.Interfaces
@@ -17,6 +18,7 @@ namespace Timesheet.Api.Repositories.Interfaces
         bool DeleteTimesheetsApprovalRequests(int[] ids);
         bool UpdateTimesheetContolRecords(int userId, DateTime period, int status);
         TimesheetControlDto GetTimesheetControlRecord(DateTime period, int userId);
-
+        List<TimesheetControlDto> GetFutureTimesheetControlRecords(DateTime currentPeriod, int userId);
+        bool UpdateUserTemplate(int[] ids, int newUserTemplate);
     }
 }

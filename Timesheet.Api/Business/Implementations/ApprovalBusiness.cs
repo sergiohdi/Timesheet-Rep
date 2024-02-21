@@ -19,6 +19,7 @@ namespace Timesheet.Api.Business.Implementations
         private readonly IEmployeeTypeRepository _employeeTypeRepository;
         private readonly ITimesheetDataRepository _timesheetDataRepository;
         private readonly ITimesheetControlRepository _timesheetControlRepository;
+        private readonly IApprovalHistoryRepository _approvalHistoryRepository;
         private readonly ILogger<ApprovalBusiness> _logger;
 
         public ApprovalBusiness(
@@ -29,6 +30,7 @@ namespace Timesheet.Api.Business.Implementations
             IEmployeeTypeRepository employeeTypeRepository,
             ITimesheetDataRepository timesheetDataRepository,
             ITimesheetControlRepository timesheetControlRepository,
+            IApprovalHistoryRepository approvalHistoryBusiness,
             ILogger<ApprovalBusiness> logger
         )
         {
@@ -39,6 +41,7 @@ namespace Timesheet.Api.Business.Implementations
             _employeeTypeRepository = employeeTypeRepository;
             _timesheetDataRepository = timesheetDataRepository;
             _timesheetControlRepository = timesheetControlRepository;
+            _approvalHistoryRepository = approvalHistoryBusiness;
             _logger = logger;
         }
 
@@ -56,11 +59,25 @@ namespace Timesheet.Api.Business.Implementations
                 return false;
             }
 
-            // Todo add logic to add data that should be come in the request
-            bool response = _approvalRepository.SaveApprovalRequest(approvalRequest);
-            bool timeOffResponse = CreateTimeoffRecords(approvalRequest);
+            var timesheetControl = _timesheetControlRepository.GetTimesheetControlByPeriodAndUserId(
+                approvalRequest.Period.Value,
+                approvalRequest.UserId);
 
-            return response && timeOffResponse;
+            // Todo add logic to add data that should be come in the request
+            int response = _approvalRepository.SaveApprovalRequest(approvalRequest);
+            bool timeOffResponse = CreateTimeoffRecords(approvalRequest);
+            bool responseApprovalHistory = _approvalHistoryRepository.CreateApprovalHistory(new CreateApprovalRequestDto
+            {
+                ActionDate = DateTime.Now,
+                ActionType = (int)ApprovalStatusOption.Waiting,
+                IdUser = approvalRequest.UserId,
+                UserName = "Sergio Barbosa",
+                IdTimesheetControl = timesheetControl.TimesheetPeriodId,
+                ApprovalId = response,
+                TimesheetType = (int)ApprovalType.Timeoff
+            });
+
+            return response > 0 && timeOffResponse && responseApprovalHistory;
         }
 
         public bool CreateRegularTimeRequest(ApprovalDto approvalRequest, int userId)
@@ -75,17 +92,9 @@ namespace Timesheet.Api.Business.Implementations
                 approvalRequest.Period.Value,
                 userId);
 
-            // validate timesheet user template
-            //bool isValidPeriod = ValidateRegularTimeRecords(timesheetControl.UserTemplateId, regularTimeRecords);
-            //if (!isValidPeriod)
-            //{
-            //    _logger.LogError("User period doesn't have valid values on registered days");
-            //    return false;
-            //}
-
             // create new record on timesheet approval
             SetRegularTimeRequest(approvalRequest, userId);
-            bool approvalRequestCreated = _approvalRepository.SaveApprovalRequest(approvalRequest);
+            int approvalCreatedId = _approvalRepository.SaveApprovalRequest(approvalRequest);
 
             // update status in timesheet records
             bool timesheetRecordsUpdated = _timesheetDataRepository.UpdateRegularRecords(
@@ -99,9 +108,23 @@ namespace Timesheet.Api.Business.Implementations
                 approvalRequest.Period.Value,
                 (int)ApprovalStatusOption.Waiting);
 
+            // Create approval history record
+            bool responseApprovalHistory = _approvalHistoryRepository.CreateApprovalHistory(new CreateApprovalRequestDto
+            {
+                ActionDate = DateTime.Now,
+                ActionType = (int)ApprovalStatusOption.Waiting,
+                IdUser = approvalRequest.UserId,
+                UserName = "Sergio Barbosa",
+                IdTimesheetControl = timesheetControl.TimesheetPeriodId,
+                TimesheetType = (int)ApprovalType.RegularTime
+            });
+
             // send email to the supervisor
 
-            return timesheetRecordsUpdated && timesheetControlUpdated && approvalRequestCreated;
+            return timesheetRecordsUpdated && 
+                   timesheetControlUpdated && 
+                   approvalCreatedId > 0 &&
+                   responseApprovalHistory;
         }
 
         public IEnumerable<ApprovalDto> GetTimeOffRecords(DateTime period)

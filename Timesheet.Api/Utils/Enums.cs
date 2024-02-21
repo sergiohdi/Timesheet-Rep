@@ -16,4 +16,11 @@
         Billing,
         Location
     }
+
+    public enum BillableOptions
+    {
+        BillableAndNoBillable = 9,
+        NonBillable = 10,
+        Billable = 11,
+    }
 }

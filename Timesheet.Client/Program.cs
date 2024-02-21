@@ -42,6 +42,7 @@ namespace Timesheet.Client
             builder.Services.AddTransient<ICostCenterDataService, CostCenterDataService>();
             builder.Services.AddTransient<ITimesheetTypeDataService, TimesheetTypeDataService>();
             builder.Services.AddTransient<ITimesheetControlDataService, TimesheetControlDataService>();
+            builder.Services.AddTransient<IApprovalHistoryService, ApprovalHistoryService>();
 
             // Business Services
             builder.Services.AddScoped<IComponentComunicationService, ComponentComunicationService>();

@@ -21,11 +21,13 @@ namespace Timesheet.Api.Repositories.EF_Implementations
             _mapper = mapper;
         }
 
-        public bool SaveApprovalRequest(ApprovalDto approvalRequest)
+        public int SaveApprovalRequest(ApprovalDto approvalRequest)
         {
             Approvals approval = _mapper.Map<Approvals>(approvalRequest);
             _db.Approvals.Add(approval);
-            return _db.SaveChanges() > 0;
+            _db.SaveChanges();
+
+            return approval.ApprovalId;
         }
 
         public IEnumerable<ApprovalDto> GetTimeOffRecords(DateTime period)
@@ -167,6 +169,22 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                 .ExecuteDelete();
 
             return true;
+        }
+
+        public List<ApprovalDto> GetFutureApprovals(DateTime currentPeriod, int userId) 
+        {
+            List<Approvals> result = _db.Approvals
+                .AsNoTracking()
+                .Where( x => x.UserId == userId && x.Period > currentPeriod && x.Duration > 0)
+                .ToList();
+
+            return _mapper.Map<List<ApprovalDto>>(result);
+        }
+
+        public bool UpdateApprovals(IEnumerable<ApprovalDto> approvals)
+        {
+            _db.UpdateRange(_mapper.Map<IEnumerable<Approvals>>(approvals));
+            return _db.SaveChanges() > 0;
         }
     }
 }

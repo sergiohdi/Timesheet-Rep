@@ -14,6 +14,8 @@ namespace Timesheet.Api.Models
         public int? IdTimesheetControl { get; set; }
         public int? TimesheetType { get; set; }
         public string Comments { get; set; }
+        public string UserName { get; set; }
+        public int? ApprovalId { get; set; }
 
         public virtual User IdUserNavigation { get; set; }
     }

@@ -1,0 +1,24 @@
+﻿h6 {
+    font-size: 0.75rem;
+}
+
+.regular-details-grid {
+    table-layout: fixed;
+    font-size: 0.80rem;
+}
+
+.thead-details-grid tr {
+    font-size: 0.78rem;
+}
+
+    .thead-details-grid tr th {
+        padding: 8px;
+        background-color: #e3eef4;
+        border-color: #dee2e6;
+        color: #212529;
+    }
+
+
+.tbody-details-grid tr td {
+    padding: 3px 0 3px 10px;
+}

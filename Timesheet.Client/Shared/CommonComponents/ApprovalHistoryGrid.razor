@@ -1,0 +1,37 @@
+﻿
+<h6> <strong> APPROVAL HISTORY </strong> </h6>
+
+<table class="table table-bordered approval-history-grid">
+    <thead class="thead-approval-grid">
+        <tr>
+            <th style="width:15%">Date</th>
+            <th style="width:15%">Action</th>
+            <th style="width:20%">User</th>
+            <th style="width:50%">Comments</th>
+        </tr>
+    </thead>
+    <tbody class="tbody-approval-grid">
+        @foreach (var item in GridData)
+        {
+            <tr>
+                <td>
+                    @item.ActionDate.ToString("MMM dd, yyyy hh:mm tt")
+                </td>
+                <td>
+                    @item.ActionType
+                </td>
+                <td>
+                    @item.UserName
+                </td>
+                <td>
+                    @item.Comments
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter]
+    public List<GetApprovalsHistory> GridData { get; set; }
+}

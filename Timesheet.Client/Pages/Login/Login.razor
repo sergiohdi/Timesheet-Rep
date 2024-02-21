@@ -1,0 +1,144 @@
+﻿@page "/login"
+@inject IUserDataService userService
+@inject NavigationManager navManager
+
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh; /* Use 100vh to take the full height of the viewport */
+    }
+
+    .login-form {
+        width: 100%;
+        max-width: 400px; /* Adjust this value based on your preference */
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Optional: adds a shadow for better visibility */
+        border-radius: 8px; /* Optional: rounds the corners of the form */
+    }
+
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .my-form.k-form .k-form-buttons {
+        justify-content: flex-end;
+    }
+
+    .required-field::before {
+        content: attr(LabelText);
+        vertical-align: middle;
+    }
+
+    .required-field > .k-label::after {
+        content: "*";
+        color: red;
+        margin-left: 3px;
+    }
+
+    .telerik-label {
+        font-size: 1rem;
+        font-weight: bold;
+        margin-bottom: .5rem;
+        display: block;
+    }
+
+    .h3-label {
+        font-size: 1.75rem;
+    }
+
+    .h2-label {
+        font-size: 2.25rem;
+    }
+
+    .demo-section {
+        position: relative;
+        top: 10%;
+    }
+</style>
+
+<div class="demo-section d-flex justify-content-center align-items-center">
+    <TelerikForm Model="@loginModel"
+                Class="login-form"
+                OnValidSubmit="@HandleValidSubmit"
+                OnInvalidSubmit="@HandleInvalidSubmit">
+    <FormValidation>
+      <DataAnnotationsValidator></DataAnnotationsValidator>
+    </FormValidation>
+    <FormItems>
+        
+      <FormItem Field="@nameof(Timesheet.Client.Models.User.Email)">
+        <Template>
+                    <label class="k-label k-form-label h3-label">Timesheet Login</label>
+          <div style="margin-bottom: 1rem;"></div>
+          <label for="mail" class="k-label k-form-label">Email</label>
+          <TelerikTextBox Id="mail" @bind-Value="@loginModel.Email" InputMode="email" Placeholder="example@domain.com"></TelerikTextBox>
+          <TelerikValidationMessage For="@(() => loginModel.Email)"></TelerikValidationMessage>
+        </Template>
+      </FormItem>
+      <FormItem Field="@nameof(Timesheet.Client.Models.User.Password)">
+        <Template>
+          <label for="pass" class="k-label k-form-label">Password*</label>
+          <TelerikTextBox Id="pass" @bind-Value="@loginModel.Password" Password="true"></TelerikTextBox>
+          <TelerikValidationMessage For="@(() => loginModel.Password)"></TelerikValidationMessage>
+        </Template>
+      </FormItem>
+    </FormItems>
+    <FormButtons>
+      <TelerikButton Icon="@nameof(FontIcon.Binoculars)" Class="colorbutton">Login ></TelerikButton>
+    </FormButtons>
+  </TelerikForm>
+</div>
+
+
+@if (loginFailed)
+{
+    <div class="k-form-error">Invalid email or password</div>
+}
+
+@code {
+    private Timesheet.Client.Models.User loginModel = new Timesheet.Client.Models.User();
+    private bool loginFailed = false;
+
+    public bool ValidSubmit { get; set; } = false;
+
+    async void HandleValidSubmit()
+    {
+        ValidSubmit = true;
+
+        await Task.Delay(2000);
+
+        ValidSubmit = false;
+
+        StateHasChanged();
+    }
+
+    void HandleInvalidSubmit()
+    {
+        ValidSubmit = false;
+    }
+
+    // private async Task HandleLoginFormSubmit()
+    // {
+    //     loginFailed = !await AuthenticateUser(loginModel.Email, loginModel.Password);
+    //     if (!loginFailed)
+    //     {
+    //         navManager.NavigateTo("/activity");
+    //     }
+    // }
+
+    // private Task<bool> AuthenticateUser(string Email, string Password)
+    // {
+    //     // Implement actual authentication logic here
+    //     // This is just a placeholder for demonstration
+    //     return Task.FromResult(true);
+    // }
+}

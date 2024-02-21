@@ -9,6 +9,7 @@ namespace Timesheet.Client.Services.Implementations
         public event Action<Notification> Subscriber;
         public event Action<bool> ChangeWidthSubscriber;
         public event Action OpenTimeOffPopUp;
+        public event Action RefreshTimesheet;
 
         public void SendChangeWidth(bool value)
         {
@@ -23,6 +24,11 @@ namespace Timesheet.Client.Services.Implementations
         public void SendOpenPopUpAction()
         {
             OpenTimeOffPopUp.Invoke();
+        }
+
+        public void SendRefreshTimesheetAction() 
+        {
+            RefreshTimesheet.Invoke();
         }
     }
 }

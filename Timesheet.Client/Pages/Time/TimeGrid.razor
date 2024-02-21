@@ -2,38 +2,37 @@
 @inject IGeneralDataService generalSrv
 @inject IProjectDataService projectSrv
 @inject ITimesheetService timesheetSrv
+@inject IApprovalHistoryService approvalHistorySrv
 @inject IComponentComunicationService notificationSrv
 
 @implements IDisposable
 
-<div>
-    <RegularTime Days="_days"
-                 BillingStatusList="_billingStatus"
-                 ProjectList="_projects"
-                 OnRegularTimeCreated="GetTimesheetData" />
-    <TimeoffTime Days="_days"
-                 TimeOffRecords="_timeOffRecords"
-                 OnTimeOffAction="GetTimeoffData" />
-    <table class="table table-bordered time-grid custom-margin-table">
-        <thead class="thead-time-grid">
-            <tr>
-                <th style="width: 30px;"></th>
-                <th rowspan="3" class="row-timeoff">Total</th>
-                @if (timesheetSrv.TotalHoursPerDay.Any())
+<RegularTime Days="_days"
+             BillingStatusList="_billingStatus"
+             ProjectList="_projects"
+             OnRegularTimeCreated="GetTimesheetData" />
+<TimeoffTime Days="_days"
+             TimeOffRecords="_timeOffRecords"
+             OnTimeOffAction="GetTimeoffData" />
+<table class="table table-bordered time-grid custom-margin-table">
+    <thead class="thead-time-grid">
+        <tr>
+            <th style="width: 30px;"></th>
+            <th rowspan="3" class="row-timeoff">Total</th>
+            @if (timesheetSrv.TotalHoursPerDay.Any())
+            {
+                @foreach (var item in timesheetSrv.TotalHoursPerDay)
                 {
-                    @foreach (var item in timesheetSrv.TotalHoursPerDay)
-                    {
-                        <th style="width: 40px">@item.Value.GetDecimalWithFormat(Constants.decimalFormat)</th>
-                    }
+                    <th class="row-day">@item.Value.GetDecimalWithFormat(Constants.decimalFormat)</th>
                 }
-                <th style="width: 50px">&nbsp;</th>
-                <th style="width: 65px">&nbsp;</th>
-                <th class="row-billable">&nbsp;</th>
-                <th style="width: 70px">&nbsp;</th>
-            </tr>
-        </thead>
-    </table>
-</div>
+            }
+            <th style="width: 50px">&nbsp;</th>
+            <th style="width: 65px">&nbsp;</th>
+            <th class="row-billable">&nbsp;</th>
+            <th style="width: 70px">&nbsp;</th>
+        </tr>
+    </thead>
+</table>
 
 @code {
     [Parameter]
@@ -70,7 +69,8 @@
             {
                 _billingStatus = task.Result.Data.Where(x => !x.Value.Equals("Billable & Non-Billable")).ToList();
             }),
-            GetTimeOffRecords()
+            GetTimeOffRecords(),
+            GetApprovalsHistory()
         };
         await Task.WhenAll(tasks);
 
@@ -98,6 +98,8 @@
 
         CalculateHours();
         CalculateHoursPerColumn();
+
+        notificationSrv.SendRefreshTimesheetAction();
     }
 
     public void AddNewRegularTimeRecord()
@@ -149,9 +151,16 @@
     {
         _minDate = DateFunctions.GetPeriod(Year.Value, Month.Value, Period.Value);
         CalculatePeriodDays();
-        await timesheetSrv.CreateTimesheetControl(_minDate);
-        await GetTimesheetData();
-        await GetTimeOffRecords();
+        var tasks = new List<Task>
+        {
+            timesheetSrv.CreateTimesheetControl(_minDate),
+            GetTimesheetData(),
+            GetTimeOffRecords(),
+        };
+
+        await Task.WhenAll(tasks);
+        await GetApprovalsHistory();
+
         StateHasChanged();
     }
 
@@ -193,6 +202,11 @@
         };
 
         await Task.WhenAll(tasks);
+    }
+
+    private async Task GetApprovalsHistory()
+    {
+        await timesheetSrv.GetApprovalsHistory();
     }
 }
 

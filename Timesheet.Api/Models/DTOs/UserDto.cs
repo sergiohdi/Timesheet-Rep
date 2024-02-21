@@ -29,6 +29,7 @@ namespace Timesheet.Api.Models.DTOs
         public int? SupervisorId { get; set; }
         public int? SubstituteUser { get; set; }
         public int? TimesheetTemplate { get; set; }
+        public string Password { get; set; }
         public int? EmpTypeId { get; set; }
         public string Username 
         {

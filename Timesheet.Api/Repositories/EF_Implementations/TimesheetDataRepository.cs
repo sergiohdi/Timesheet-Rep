@@ -47,11 +47,9 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                                       })
                                       .ToList();
         }
-        
+
         public TimesheetDataDto GetTimesheetRecord(long timesheetId)
-        {
-            return _mapper.Map<TimesheetDataDto>(_db.TimesheetData.FirstOrDefault(x => x.TimesheetId == timesheetId));
-        }
+            => _mapper.Map<TimesheetDataDto>(_db.TimesheetData.FirstOrDefault(x => x.TimesheetId == timesheetId));
 
         public void UpdateTimesheetBaseInformation(TimesheetItemDto item, Dictionary<Property, object> propertyData, int oldBillableInfo)
         {
@@ -150,7 +148,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                 {
                     timesheetRecord.BillableHours = entry.TotalHours;
                 }
-                else 
+                else
                 {
                     timesheetRecord.NonBillableHours = entry.TotalHours;
                 }
@@ -246,7 +244,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                                .ExecuteDelete();
         }
 
-        public bool SaveTimeOffRecords(IEnumerable<TimesheetData> timeOffRecords) 
+        public bool SaveTimeOffRecords(IEnumerable<TimesheetData> timeOffRecords)
         {
             _db.TimesheetData.AddRange(timeOffRecords);
             return _db.SaveChanges() > 0;
@@ -275,7 +273,7 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
             return true;
         }
-        
+
         public bool UpdateRegularRecords(int id, DateTime startDate, DateTime endDate, int status)
         {
             _db.TimesheetData.Where(
@@ -287,11 +285,11 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
         public bool UpdateRegularRecords(int userId, DateTime period, int status)
         {
-            _db.TimesheetData.Where(x => 
-                                                            x.Userid == userId && 
-                                                            x.Timesheetperiod == period.Date && 
+            _db.TimesheetData.Where(x =>
+                                                            x.Userid == userId &&
+                                                            x.Timesheetperiod == period.Date &&
                                                             x.Clientid != null)
-                               .ExecuteUpdate(s => 
+                               .ExecuteUpdate(s =>
                                         s.SetProperty(x => x.Approvalstatus, status));
 
             return true;
@@ -327,5 +325,40 @@ namespace Timesheet.Api.Repositories.EF_Implementations
                                       })
                                       .ToList();
         }
+
+        public List<TimesheetDataFutureDto> GetFutureTimesheetDataRecords(DateTime currentPeriod, int userId)
+        {
+            return _db.TimesheetData.AsNoTracking()
+                                      .Where(x => x.Userid == userId && x.Timesheetperiod > currentPeriod)
+                                      .Select(x => new TimesheetDataFutureDto
+                                      {
+                                          TimesheetId = x.TimesheetId,
+                                          TimeoffId = x.Tasktimeoffid.Value,
+                                          Billable = x.Billable.HasValue ? x.Billable.Value : 0,
+                                          NonBillableHours = x.NonBillableHours.Value,
+                                          BillableHours = x.BillableHours.Value,
+                                          TimeOffHours = x.TimeOffHours.Value,
+                                          ProjectHours = x.ProjectHours.Value,
+                                          TotalHours = x.TotalHours.Value,
+                                      })
+                                      .ToList();
+        }
+
+        public bool UpdateFutureTimesheetRecords(IEnumerable<TimesheetDataFutureDto> records)
+        {
+            foreach (var record in records)
+            {
+                _db.TimesheetData.Where(x => x.TimesheetId == record.TimesheetId)
+                                  .ExecuteUpdate(s => 
+                                                      s.SetProperty(x => x.NonBillableHours, record.NonBillableHours)
+                                                       .SetProperty(x => x.BillableHours, record.BillableHours)
+                                                       .SetProperty(x => x.TimeOffHours, record.TimeOffHours)
+                                                       .SetProperty(x => x.ProjectHours, record.ProjectHours)
+                                                       .SetProperty(x => x.TotalHours, record.TotalHours));
+            }
+
+            return true;
+        }
+        
     }
 }

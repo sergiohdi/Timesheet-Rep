@@ -20,6 +20,7 @@ namespace Timesheet.Client.Models
         [Required(ErrorMessage = "Last Name is required")]
         [MinLength(3, ErrorMessage = "Last Name must be at least 3 characters")]
         public string LastName { get; set; }
+        [Display(Name = "Login Name")]
         [Required(ErrorMessage = "Login is required")]
         public string LoginName { get; set; }       
         public bool? Disabled { get; set; }
@@ -53,6 +54,10 @@ namespace Timesheet.Client.Models
 
         [Required(ErrorMessage = "Select a Timesheet Template")]
         public int? TimesheetTemplate { get; set; }
+        [Display(Name = "Password*")]
+        [MinLength(12, ErrorMessage = "Your password should be at least 12 characters.")]
+        [Required(ErrorMessage = "Your password should be at least 12 characters.")]
+        public string Password { get; set; }
 
         [Required(ErrorMessage = "Select an Employee Type")]
         public int? EmpTypeId { get; set; }

@@ -393,4 +393,8 @@ app {
     .nav-item-selected {
         color: dodgerblue !important;
     }
+
+    .row-day {
+        width: 45px;
+    }
 }

@@ -1,17 +1,6 @@
 USE [cosmosgu_timesheet]
 GO
-/****** Object:  User [cosmosgu_fin2]    Script Date: 5/30/2023 6:48:30 PM ******/
-CREATE USER [cosmosgu_fin2] FOR LOGIN [cosmosgu_fin2] WITH DEFAULT_SCHEMA=[cosmosgu_fin2]
-GO
-ALTER ROLE [db_owner] ADD MEMBER [cosmosgu_fin2]
-GO
-ALTER ROLE [db_ddladmin] ADD MEMBER [cosmosgu_fin2]
-GO
-ALTER ROLE [db_datareader] ADD MEMBER [cosmosgu_fin2]
-GO
-ALTER ROLE [db_datawriter] ADD MEMBER [cosmosgu_fin2]
-GO
-/****** Object:  UserDefinedTableType [dbo].[TimeSheetDetailsType]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  UserDefinedTableType [dbo].[TimeSheetDetailsType]    Script Date: 2/21/2024 10:44:09 AM ******/
 CREATE TYPE [dbo].[TimeSheetDetailsType] AS TABLE(
 	[timesheetperiod] [datetime] NOT NULL,
 	[startdate] [datetime] NOT NULL,
@@ -105,12 +94,12 @@ CREATE TYPE [dbo].[TimeSheetDetailsType] AS TABLE(
 	[UserGroupName] [nvarchar](50) NULL
 )
 GO
-/****** Object:  UserDefinedTableType [dbo].[TimeSheetReportID]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  UserDefinedTableType [dbo].[TimeSheetReportID]    Script Date: 2/21/2024 10:44:10 AM ******/
 CREATE TYPE [dbo].[TimeSheetReportID] AS TABLE(
 	[ReportPeriodID] [int] NULL
 )
 GO
-/****** Object:  Table [dbo].[Activity]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[Activity]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -135,7 +124,75 @@ CREATE TABLE [dbo].[Activity](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ApprovalStatus]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[Activity_Orig_Feb14,2024]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Activity_Orig_Feb14,2024](
+	[ActivityId] [int] IDENTITY(1,1) NOT NULL,
+	[ActivityName] [nvarchar](255) NOT NULL,
+	[Description] [nvarchar](255) NULL,
+	[ActivityCode] [nvarchar](50) NULL,
+	[CreatedBy] [int] NULL,
+	[CreatedDate] [datetime] NULL,
+	[CreatedIP] [nvarchar](80) NULL,
+	[UpdatedBy] [int] NULL,
+	[UpdatedDate] [datetime] NULL,
+	[UpdatedIP] [nvarchar](80) NULL,
+	[Disabled] [bit] NULL,
+	[CreatedMacAddress] [nvarchar](50) NULL,
+	[UpdatedMacAddress] [nvarchar](50) NULL,
+ CONSTRAINT [PK_Activity_11] PRIMARY KEY CLUSTERED 
+(
+	[ActivityId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ApprovalHistory]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ApprovalHistory](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[ActionDate] [datetime] NULL,
+	[ActionType] [int] NULL,
+	[IdUser] [int] NULL,
+	[IdTimesheetControl] [int] NULL,
+	[TimesheetType] [int] NULL,
+	[Comments] [varchar](max) NULL,
+	[UserName] [varchar](500) NULL,
+	[ApprovalId] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Approvals]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Approvals](
+	[ApprovalId] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [int] NOT NULL,
+	[ApprovalStatusId] [int] NOT NULL,
+	[TimeOffId] [int] NULL,
+	[ApprovalType] [int] NOT NULL,
+	[StartDate] [date] NOT NULL,
+	[EndDate] [date] NOT NULL,
+	[Duration] [decimal](18, 2) NULL,
+	[Comments] [varchar](500) NULL,
+	[Period] [date] NULL,
+ CONSTRAINT [PK_Approvals] PRIMARY KEY CLUSTERED 
+(
+	[ApprovalId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ApprovalStatus]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -149,7 +206,7 @@ CREATE TABLE [dbo].[ApprovalStatus](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Client]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[Client]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -196,7 +253,7 @@ CREATE TABLE [dbo].[Client](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[CostCenter]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[CostCenter]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -219,7 +276,7 @@ CREATE TABLE [dbo].[CostCenter](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Department]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[Department]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -238,7 +295,6 @@ CREATE TABLE [dbo].[Department](
 	[UpdatedBy] [int] NULL,
 	[UpdatedDate] [datetime] NULL,
 	[UpdatedIP] [nvarchar](80) NULL,
-	[Disabled] [bit] NULL,
 	[CreatedMacAddress] [nvarchar](50) NULL,
 	[UpdatedMacAddress] [nvarchar](50) NULL,
  CONSTRAINT [PK_Departments] PRIMARY KEY CLUSTERED 
@@ -247,7 +303,7 @@ CREATE TABLE [dbo].[Department](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[EmployeeType]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[EmployeeType]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -262,7 +318,7 @@ CREATE TABLE [dbo].[EmployeeType](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[General]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[General]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -279,7 +335,33 @@ CREATE TABLE [dbo].[General](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Project]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[ParentDepartment]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ParentDepartment](
+	[Id] [int] NOT NULL,
+	[Name] [nvarchar](255) NOT NULL,
+ CONSTRAINT [PK_ParentDepartment] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Payroll]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Payroll](
+	[PayrollID] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [int] NOT NULL,
+	[StartDate] [date] NOT NULL,
+	[EndDate] [date] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Project]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -314,7 +396,7 @@ CREATE TABLE [dbo].[Project](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ProjectHasUser]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[ProjectHasUser]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -329,26 +411,62 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Roles]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[Substitute]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[Roles](
-	[roleid] [int] IDENTITY(1,1) NOT NULL,
-	[rolename] [nvarchar](255) NULL,
- CONSTRAINT [PK_Roles] PRIMARY KEY CLUSTERED 
+CREATE TABLE [dbo].[Substitute](
+	[SubId] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [int] NOT NULL,
+	[SubstituteId] [int] NOT NULL,
+ CONSTRAINT [PK_Substitute] PRIMARY KEY CLUSTERED 
 (
-	[roleid] ASC
+	[SubId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[RP_TimeSheetData]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[TimeOff]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[RP_TimeSheetData](
+CREATE TABLE [dbo].[TimeOff](
+	[TimeOffId] [int] IDENTITY(1,1) NOT NULL,
+	[TimeOffName] [nvarchar](255) NOT NULL,
+	[TimeOffCode] [nvarchar](255) NULL,
+	[Disabled] [bit] NULL,
+ CONSTRAINT [PK_Task] PRIMARY KEY CLUSTERED 
+(
+	[TimeOffId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TimesheetControl]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TimesheetControl](
+	[TimesheetPeriodID] [int] IDENTITY(1,1) NOT NULL,
+	[TimesheetPeriod] [datetime] NOT NULL,
+	[UserId] [int] NOT NULL,
+	[StartDate] [datetime] NOT NULL,
+	[EndDate] [datetime] NOT NULL,
+	[ApprovalStatusId] [int] NOT NULL,
+	[UserTemplateId] [int] NULL,
+ CONSTRAINT [PK_TimesheetControl] PRIMARY KEY CLUSTERED 
+(
+	[TimesheetPeriodID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TimesheetData]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TimesheetData](
 	[timesheetId] [bigint] IDENTITY(1,1) NOT NULL,
 	[timesheetperiod] [datetime] NOT NULL,
 	[startdate] [datetime] NOT NULL,
@@ -440,44 +558,24 @@ CREATE TABLE [dbo].[RP_TimeSheetData](
 	[UserGroupSetName] [nvarchar](50) NULL,
 	[UserGroupId] [int] NULL,
 	[UserGroupName] [nvarchar](50) NULL,
- CONSTRAINT [PK_RP_TimeSheetData3] PRIMARY KEY CLUSTERED 
+ CONSTRAINT [PK_RP_TimeSheetData_temp1] PRIMARY KEY CLUSTERED 
 (
 	[timesheetId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[TimeOff]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[TimesheetType]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[TimeOff](
-	[TimeOffId] [int] IDENTITY(1,1) NOT NULL,
-	[TimeOffName] [nvarchar](255) NOT NULL,
-	[TimeOffCode] [nvarchar](255) NULL,
-	[Disabled] [bit] NULL,
- CONSTRAINT [PK_Task] PRIMARY KEY CLUSTERED 
-(
-	[TimeOffId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+CREATE TABLE [dbo].[TimesheetType](
+	[TimeTemplateId] [int] IDENTITY(1,1) NOT NULL,
+	[TemplateName] [nchar](100) NULL,
+	[TimeTemplateDesc] [nchar](300) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[TimesheetControl]    Script Date: 5/30/2023 6:48:31 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[TimesheetControl](
-	[TimesheetPeriodID] [int] IDENTITY(1,1) NOT NULL,
-	[CalendarPeriod] [nvarchar](50) NULL,
-	[Active] [bit] NULL,
- CONSTRAINT [PK_TimesheetControl] PRIMARY KEY CLUSTERED 
-(
-	[TimesheetPeriodID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[TranslationMappings_ActivityGrouping]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[TranslationMappings_ActivityGrouping]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -492,7 +590,7 @@ CREATE TABLE [dbo].[TranslationMappings_ActivityGrouping](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[User]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[User]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -537,13 +635,15 @@ CREATE TABLE [dbo].[User](
 	[EmpTypeId] [int] NULL,
 	[SubstituteUser] [int] NULL,
 	[SupervisorId] [int] NULL,
+	[TimesheetTemplate] [int] NOT NULL,
+	[Password] [nvarchar](500) NULL,
  CONSTRAINT [PK_User_1] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[UserActivityCode]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[UserActivityCode]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -579,7 +679,7 @@ CREATE TABLE [dbo].[UserActivityCode](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[UserSelectAct]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[UserSelectAct]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -593,7 +693,7 @@ CREATE TABLE [dbo].[UserSelectAct](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Year_Month_Period]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  Table [dbo].[Year_Month_Period]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -620,6 +720,20 @@ ALTER TABLE [dbo].[Client] ADD  CONSTRAINT [DF_Client_APVendorID]  DEFAULT (N'HU
 GO
 ALTER TABLE [dbo].[Client] ADD  CONSTRAINT [DF_Client_APCurrencyCode]  DEFAULT (N'CAD') FOR [APCurrencyCode]
 GO
+ALTER TABLE [dbo].[ApprovalHistory]  WITH CHECK ADD FOREIGN KEY([IdUser])
+REFERENCES [dbo].[User] ([Id])
+GO
+ALTER TABLE [dbo].[Approvals]  WITH CHECK ADD FOREIGN KEY([ApprovalStatusId])
+REFERENCES [dbo].[ApprovalStatus] ([approvalstatusid])
+GO
+ALTER TABLE [dbo].[Approvals]  WITH CHECK ADD FOREIGN KEY([TimeOffId])
+REFERENCES [dbo].[TimeOff] ([TimeOffId])
+GO
+ALTER TABLE [dbo].[Approvals]  WITH CHECK ADD  CONSTRAINT [FK__Approvals__UserI__1DB06A4F] FOREIGN KEY([UserId])
+REFERENCES [dbo].[User] ([Id])
+GO
+ALTER TABLE [dbo].[Approvals] CHECK CONSTRAINT [FK__Approvals__UserI__1DB06A4F]
+GO
 ALTER TABLE [dbo].[Project]  WITH NOCHECK ADD  CONSTRAINT [FK__Project__ClientI__31EC6D26] FOREIGN KEY([ClientId])
 REFERENCES [dbo].[Client] ([Id])
 GO
@@ -635,16 +749,30 @@ REFERENCES [dbo].[User] ([Id])
 GO
 ALTER TABLE [dbo].[ProjectHasUser] CHECK CONSTRAINT [FK__ProjectHa__UserI__2DE6D218]
 GO
-ALTER TABLE [dbo].[User]  WITH NOCHECK ADD FOREIGN KEY([DepartmentId])
-REFERENCES [dbo].[Department] ([Id])
+ALTER TABLE [dbo].[TimesheetControl]  WITH CHECK ADD FOREIGN KEY([ApprovalStatusId])
+REFERENCES [dbo].[ApprovalStatus] ([approvalstatusid])
 GO
-ALTER TABLE [dbo].[User]  WITH NOCHECK ADD FOREIGN KEY([EmpTypeId])
-REFERENCES [dbo].[EmployeeType] ([emptypeid])
-GO
-ALTER TABLE [dbo].[User]  WITH NOCHECK ADD FOREIGN KEY([SubstituteUser])
+ALTER TABLE [dbo].[TimesheetControl]  WITH CHECK ADD  CONSTRAINT [FK_TimesheetControl_User] FOREIGN KEY([UserId])
 REFERENCES [dbo].[User] ([Id])
 GO
-/****** Object:  StoredProcedure [dbo].[REP_SP_TimeSheetDetails]    Script Date: 5/30/2023 6:48:31 PM ******/
+ALTER TABLE [dbo].[TimesheetControl] CHECK CONSTRAINT [FK_TimesheetControl_User]
+GO
+ALTER TABLE [dbo].[User]  WITH NOCHECK ADD  CONSTRAINT [FK__User__Department__4222D4EF] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Department] ([Id])
+GO
+ALTER TABLE [dbo].[User] CHECK CONSTRAINT [FK__User__Department__4222D4EF]
+GO
+ALTER TABLE [dbo].[User]  WITH NOCHECK ADD  CONSTRAINT [FK__User__EmpTypeId__4316F928] FOREIGN KEY([EmpTypeId])
+REFERENCES [dbo].[EmployeeType] ([emptypeid])
+GO
+ALTER TABLE [dbo].[User] CHECK CONSTRAINT [FK__User__EmpTypeId__4316F928]
+GO
+ALTER TABLE [dbo].[User]  WITH NOCHECK ADD  CONSTRAINT [FK__User__Substitute__440B1D61] FOREIGN KEY([SubstituteUser])
+REFERENCES [dbo].[User] ([Id])
+GO
+ALTER TABLE [dbo].[User] CHECK CONSTRAINT [FK__User__Substitute__440B1D61]
+GO
+/****** Object:  StoredProcedure [dbo].[REP_SP_TimeSheetDetails]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -687,7 +815,7 @@ GO
 	END
 	
 GO
-/****** Object:  StoredProcedure [dbo].[REP_SP_TimeSheetDetailsDelete]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  StoredProcedure [dbo].[REP_SP_TimeSheetDetailsDelete]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -702,7 +830,7 @@ Begin
 End
 
 GO
-/****** Object:  StoredProcedure [dbo].[REP_SP_ToolLastRandate]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  StoredProcedure [dbo].[REP_SP_ToolLastRandate]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -713,7 +841,7 @@ as
 insert into dbo.RP_SyncToolRanDate values(GETUTCDATE())
 
 GO
-/****** Object:  StoredProcedure [dbo].[spGetMaxBatchNum]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  StoredProcedure [dbo].[spGetMaxBatchNum]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -755,7 +883,217 @@ END
 
 
 GO
-/****** Object:  StoredProcedure [dbo].[usp_Update_WTS_LastRanDate]    Script Date: 5/30/2023 6:48:31 PM ******/
+/****** Object:  StoredProcedure [dbo].[Update_RP_Timesheet]    Script Date: 2/21/2024 10:44:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+CREATE PROCEDURE [dbo].[Update_RP_Timesheet]
+AS
+BEGIN
+  
+
+   --DELETE FROM Timesheet.dbo.Activity;
+    
+ --SET IDENTITY_INSERT [dbo].[RP_TimeSheetData_Temp1] ON;
+
+INSERT INTO [dbo].[RP_TimeSheetData_Temp1] (
+       [timesheetperiod]
+      ,[startdate]
+      ,[enddate]
+      ,[entrydate]
+      ,[userid]
+      ,[DepartmentId]
+      ,[supervisorid]
+      ,[projectid]
+      ,[projectcode]
+      ,[projectname]
+      ,[projectdescription]
+      ,[billingmethod]
+      ,[clientid]
+      ,[billingpercentage_ratio]
+      ,[projectleaderid]
+      ,[clientuserid]
+      ,[tasktimeoffid]
+      ,[tasktimeoffname]
+      ,[htasktimeoffname]
+      ,[tasktimeoffcode]
+      ,[ActivityId]
+      ,[ActivityName]
+      ,[ActivityCode]
+      ,[billable]
+      ,[billablename]
+      ,[non_billable_hours]
+      ,[billable_hours]
+      ,[time_off_hours]
+      ,[project_hours]
+      ,[total_hours]
+      ,[comments]
+      ,[rowposition]
+      ,[approvalstatus]
+      ,[taskinfo1]
+      ,[taskinfo2]
+      ,[taskinfo3]
+      ,[taskinfo4]
+      ,[taskinfo5]
+      ,[taskinfo6]
+      ,[taskinfo7]
+      ,[taskinfo8]
+      ,[taskinfo9]
+      ,[taskinfo10]
+      ,[rpinfo1]
+      ,[rpinfo2]
+      ,[rpinfo3]
+      ,[rpinfo4]
+      ,[rpinfo5]
+      ,[ttinfo1]
+      ,[ttinfo2]
+      ,[ttinfo3]
+      ,[ttinfo4]
+      ,[ttinfo5]
+      ,[teinfo1]
+      ,[teinfo2]
+      ,[teinfo3]
+      ,[teinfo4]
+      ,[teinfo5]
+      ,[reportperiodid]
+      ,[tasktimesheetid]
+      ,[timesheetentryid]
+      ,[taskname1]
+      ,[fulltaskname]
+      ,[cellcomments]
+      ,[billingpercentage]
+      ,[username]
+      ,[email]
+      ,[employeeid]
+      ,[userinfo1]
+      ,[userinfo2]
+      ,[userinfo3]
+      ,[userinfo4]
+      ,[userinfo5]
+      ,[loginname]
+      ,[employeetypeid]
+      ,[employeetypename]
+      ,[pl_name]
+      ,[pl_email]
+      ,[cu_name]
+      ,[cu_email]
+      ,[supervisorname]
+      ,[DepId]
+      ,[departmentname]
+      ,[departmentcode]
+      ,[clientname]
+      ,[clientcode]
+      ,[UserGroupSetId]
+      ,[UserGroupSetName]
+      ,[UserGroupId]
+      ,[UserGroupName]
+   )
+
+   SELECT
+       [timesheetperiod]
+      ,[startdate]
+      ,[enddate]
+      ,[entrydate]
+      ,[userid]
+      ,[DepartmentId]
+      ,[supervisorid]
+      ,[projectid]
+      ,[projectcode]
+      ,[projectname]
+      ,[projectdescription]
+      ,[billingmethod]
+      ,[clientid]
+      ,[billingpercentage_ratio]
+      ,[projectleaderid]
+      ,[clientuserid]
+      ,[tasktimeoffid]
+      ,[tasktimeoffname]
+      ,[htasktimeoffname]
+      ,[tasktimeoffcode]
+      ,[ActivityId]
+      ,[ActivityName]
+      ,[ActivityCode]
+      ,[billable]
+      ,[billablename]
+      ,[non_billable_hours]
+      ,[billable_hours]
+      ,[time_off_hours]
+      ,[project_hours]
+      ,[total_hours]
+      ,[comments]
+      ,[rowposition]
+      ,[approvalstatus]
+      ,[taskinfo1]
+      ,[taskinfo2]
+      ,[taskinfo3]
+      ,[taskinfo4]
+      ,[taskinfo5]
+      ,[taskinfo6]
+      ,[taskinfo7]
+      ,[taskinfo8]
+      ,[taskinfo9]
+      ,[taskinfo10]
+      ,[rpinfo1]
+      ,[rpinfo2]
+      ,[rpinfo3]
+      ,[rpinfo4]
+      ,[rpinfo5]
+      ,[ttinfo1]
+      ,[ttinfo2]
+      ,[ttinfo3]
+      ,[ttinfo4]
+      ,[ttinfo5]
+      ,[teinfo1]
+      ,[teinfo2]
+      ,[teinfo3]
+      ,[teinfo4]
+      ,[teinfo5]
+      ,[reportperiodid]
+      ,[tasktimesheetid]
+      ,[timesheetentryid]
+      ,[taskname1]
+      ,[fulltaskname]
+      ,[cellcomments]
+      ,[billingpercentage]
+      ,[username]
+      ,[email]
+      ,[employeeid]
+      ,[userinfo1]
+      ,[userinfo2]
+      ,[userinfo3]
+      ,[userinfo4]
+      ,[userinfo5]
+      ,[loginname]
+      ,[employeetypeid]
+      ,[employeetypename]
+      ,[pl_name]
+      ,[pl_email]
+      ,[cu_name]
+      ,[cu_email]
+      ,[supervisorname]
+      ,[DepId]
+      ,[departmentname]
+      ,[departmentcode]
+      ,[clientname]
+      ,[clientcode]
+      ,[UserGroupSetId]
+      ,[UserGroupSetName]
+      ,[UserGroupId]
+      ,[UserGroupName]
+   FROM [dbo].[RP_TimeSheetData];
+   
+
+    --SET IDENTITY_INSERT [dbo].[RP_TimeSheetData_Temp1] OFF;
+
+	
+
+END;
+GO
+/****** Object:  StoredProcedure [dbo].[usp_Update_WTS_LastRanDate]    Script Date: 2/21/2024 10:44:10 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON

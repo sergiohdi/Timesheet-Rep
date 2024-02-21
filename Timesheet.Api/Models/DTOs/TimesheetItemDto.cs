@@ -6,8 +6,11 @@ namespace Timesheet.Api.Models.DTOs
     {
         public int Id { get; set; }
         public int? ClientId { get; set; }
+        public string ClientName { get; set; }
         public int? ProjectId { get; set; }
+        public string ProjectName { get; set; }
         public int? ActivityId { get; set; }
+        public string ActivityName { get; set; }
         public int? TimeOffId { get; set; }
         public int? ApprovalStatus { get; set;}
         public int? Billable { get; set; }

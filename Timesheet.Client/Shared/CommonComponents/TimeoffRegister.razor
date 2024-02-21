@@ -6,8 +6,8 @@
 @*Timeoff PopUp*@
 <TelerikWindow Resizable="false"
                Modal="true"
-               Width="460px"
-               Height="530px"
+               Width="750px"
+               Height="550px"
                Visible="true"
                FooterLayoutAlign="@WindowFooterLayoutAlign.End">
     <WindowTitle>
@@ -17,113 +17,118 @@
         <WindowAction Name="Close" Icon="@SvgIcon.X" OnClick="@ClosePopUp" />
     </WindowActions>
     <WindowContent>
-        <EditForm EditContext="_editContext">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-             <div class="row col-12">
-                <div class="form-group col-12">
-                    <label for="timeoffType"><b>Timeoff Type:</b></label>
-                    <TelerikDropDownList Data=@TimeOffItems
-                                         @bind-Value="TimeoffApproval.TimeOffId"
-                                         TextField="@nameof(TimeOff.TimeOffName)"
-                                         ValueField="@nameof(TimeOff.TimeOffId)"
-                                         DefaultText="Select timeoff type"
-                                         Size="@ThemeConstants.DropDownList.Size.Small"
-                                         Width="100%"
-                                         Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
-                        <DropDownListSettings>
-                            <DropDownListPopupSettings Width="360px"></DropDownListPopupSettings>
-                        </DropDownListSettings>
-                    </TelerikDropDownList>
+        <div>
+            <EditForm EditContext="_editContext">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row col-12">
+                    <div class="form-group col-12">
+                        <label for="timeoffType"><b>Timeoff Type:</b></label>
+                        <TelerikDropDownList Data=@TimeOffItems
+                                             @bind-Value="TimeoffApproval.TimeOffId"
+                                             TextField="@nameof(TimeOff.TimeOffName)"
+                                             ValueField="@nameof(TimeOff.TimeOffId)"
+                                             DefaultText="Select timeoff type"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             Width="100%"
+                                             Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                            <DropDownListSettings>
+                                <DropDownListPopupSettings Width="360px"></DropDownListPopupSettings>
+                            </DropDownListSettings>
+                        </TelerikDropDownList>
+                    </div>
                 </div>
-            </div>
-            <div class="row col-12">
-                <div class="form-group col-6">
-                    <label for="startDate"><b>Start Date:</b></label>
-                    <TelerikDatePicker @bind-Value="@TimeoffApproval.StartDate"
-                                       Min="@_minDate"
-                                       Max="@_maxDate"
-                                       Id="startDate"
-                                       DisabledDates="_weekendDates"
-                                       Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
-                    </TelerikDatePicker>
-                </div>
-                <div class="form-group col-6">
-                    <label for="endDate"><b>End Date:</b></label>
-                    <TelerikDatePicker @bind-Value="@TimeoffApproval.EndDate"
-                                       Min="@_minDate"
-                                       Max="@_maxDate"
-                                       Id="endDate"
-                                       DisabledDates="_weekendDates"
-                                       Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
-                    </TelerikDatePicker>
-                </div>
-            </div>
-            <div class="row col-12">
-                <div class="form-group col-12">
-                    <label for="duration"><b>Duration by Day:</b></label>
-                    <TelerikNumericTextBox @bind-Value=@TimeoffApproval.Duration
-                                           Decimals="2"
-                                           Format="N2"
-                                           Id="step-value"
+                <div class="row col-12">
+                    <div class="form-group col-6">
+                        <label for="startDate"><b>Start Date:</b></label>
+                        <TelerikDatePicker @bind-Value="@TimeoffApproval.StartDate"
+                                           Min="@_minDate"
+                                           Max="@_maxDate"
+                                           Id="startDate"
+                                           DisabledDates="_weekendDates"
                                            Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
-                    </TelerikNumericTextBox>
+                        </TelerikDatePicker>
+                    </div>
+                    <div class="form-group col-6">
+                        <label for="endDate"><b>End Date:</b></label>
+                        <TelerikDatePicker @bind-Value="@TimeoffApproval.EndDate"
+                                           Min="@_minDate"
+                                           Max="@_maxDate"
+                                           Id="endDate"
+                                           DisabledDates="_weekendDates"
+                                           Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                        </TelerikDatePicker>
+                    </div>
                 </div>
-            </div>
-            <div class="row col-12">
-                <div class="form-group col-12">
-                    <label for="comment"><b>Comments:</b></label>
-                    <TelerikTextArea Id="timeoff-comments"
-                                     Placeholder="Enter your comments here"
-                                     Value="@TimeoffApproval.Comments"
-                                     ValueExpression="@(() => TimeoffApproval.Comments)"
-                                     ValueChanged="@((value) => TimeoffApproval.Comments = value)"
-                                     Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
-                    </TelerikTextArea>
+                <div class="row col-12">
+                    <div class="form-group col-12">
+                        <label for="duration"><b>Duration by Day:</b></label>
+                        <TelerikNumericTextBox @bind-Value=@TimeoffApproval.Duration
+                                               Decimals="2"
+                                               Format="N2"
+                                               Id="step-value"
+                                               Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                        </TelerikNumericTextBox>
+                    </div>
                 </div>
+                <div class="row col-12">
+                    <div class="form-group col-12">
+                        <label for="comment"><b>Comments:</b></label>
+                        <TelerikTextArea Id="timeoff-comments"
+                                         Placeholder="Enter your comments here"
+                                         Value="@TimeoffApproval.Comments"
+                                         ValueExpression="@(() => TimeoffApproval.Comments)"
+                                         ValueChanged="@((value) => TimeoffApproval.Comments = value)"
+                                         Enabled="TimeoffApproval.ApprovalStatusId == (int)ApprovalStatusOption.Approved ? false : true">
+                        </TelerikTextArea>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+        @if (TimeoffApproval.ApprovalId > 0)
+        {
+            <div>
+                <ApprovalHistoryGrid GridData="timeSheetSrv.ApprovalsHistory
+                        .Where(x => x.TimesheetType == (int)ApprovalType.Timeoff && x.ApprovalId == TimeoffApproval.ApprovalId).ToList()" />
             </div>
-        </EditForm>
+        }
     </WindowContent>
     <WindowFooter>
         @if (TimeoffApproval.ApprovalStatusId != (int)ApprovalStatusOption.Approved)
         {
-            <div class="form-group" style="width:100%; display:flex;">
-                <div style="width: 40%; margin-left:15px;">
-                    @if (TimeoffApproval.ApprovalId > 0)
-                    {
-                        @if (_disableSaveButton)
-                        {
-                            <button class="btn btn-danger delete-button" disabled>
-                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                <span class="sr-only">Loading...</span>
-                            </button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-danger delete-button" title="Delete timeoff request" @onclick=ConfirmDeleteTimeoffRecord>
-                                Delete
-                            </button>
-                        }
-                    }
-                </div>
-                <div style="width: 60%">
-                    <button class="btn btn-default" title="Cancel" @onclick="@ClosePopUp">
-                        Cancel
-                    </button>
+            <div class="form-group" style="display:flex; justify-items: right;">
+                @if (TimeoffApproval.ApprovalId > 0)
+                {
                     @if (_disableSaveButton)
                     {
-                        <button class="btn btn-info save-button" disabled>
+                        <button class="btn btn-danger delete-button" disabled>
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             <span class="sr-only">Loading...</span>
                         </button>
                     }
                     else
                     {
-                        <button class="btn btn-info save-button" title="Submit for approval" @onclick=SaveTimeoffData>
-                            @_submitText
+                        <button class="btn btn-danger delete-button" title="Delete timeoff request" @onclick=ConfirmDeleteTimeoffRecord>
+                            Delete
                         </button>
                     }
-                </div>
+                }
+                <button class="btn btn-default" title="Cancel" @onclick="@ClosePopUp">
+                    Cancel
+                </button>
+                @if (_disableSaveButton)
+                {
+                    <button class="btn btn-info save-button" disabled>
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="sr-only">Loading...</span>
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-info save-button" title="Submit for approval" @onclick=SaveTimeoffData>
+                        @_submitText
+                    </button>
+                }
             </div>
         }
     </WindowFooter>

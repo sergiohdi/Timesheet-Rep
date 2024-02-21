@@ -25,5 +25,7 @@ namespace Timesheet.Api.Repositories.Interfaces
         bool DeleteTimesheetRecord(DateTime period, int userId);
         bool DeleteTimesheetOnlyRows(DateTime period, int userId);
         IEnumerable<TimesheetDataDto> GetRegularTimeData(DateTime period, int userId);
+        List<TimesheetDataFutureDto> GetFutureTimesheetDataRecords(DateTime currentPeriod, int userId);
+        bool UpdateFutureTimesheetRecords(IEnumerable<TimesheetDataFutureDto> records);
     }
 }

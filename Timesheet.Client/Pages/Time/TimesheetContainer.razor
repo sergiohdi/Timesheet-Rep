@@ -78,13 +78,31 @@
             </ul>
         </div>    
     }
-    <div class="grid-container">
-        <TimeGrid Year="_selectedYear"
-                  Month="_selectedMonth"
-                  Period="_selectedPeriod"
-                  UserId="_userId"
-                  @ref="timesheet">
-        </TimeGrid>
+    
+    @if (timesheetSrv.TimesheetControl != null)
+    {
+        <div class="grid-container">
+            <TimeGrid Year="_selectedYear"
+                      Month="_selectedMonth"
+                      Period="_selectedPeriod"
+                      UserId="_userId"
+                      @ref="timesheet">
+            </TimeGrid>
+        </div>
+    }
+
+    <div style="margin-top: 15px;">
+        @if (timesheetSrv.TimeEntryDetails is not null)
+        {
+            <RegularEntryDetails GridData="timesheetSrv.TimeEntryDetails" />
+        }
+    </div>
+
+    <div style="margin-top: 15px;">
+        @if (timesheetSrv.ApprovalsHistory is not null)
+        {
+            <ApprovalHistoryGrid GridData="timesheetSrv.ApprovalsHistory.Where(x => x.TimesheetType == (int)ApprovalType.RegularTime && x.ApprovalId is null).ToList()" />
+        }
     </div>
 </div>
 
@@ -107,6 +125,7 @@
 
     protected async override Task OnInitializedAsync()
     {
+        comunicationSrv.RefreshTimesheet += RefreshTimesheet;
         comunicationSrv.SendChangeWidth(true);
         SetPeriodParameters();
         SetDropDownValues();
@@ -116,11 +135,11 @@
         {
             await CreateTimesheetControl();
         }
-        Console.WriteLine(JsonConvert.SerializeObject(timesheetSrv.TimesheetControl));
     }
 
     public void Dispose()
     {
+        comunicationSrv.RefreshTimesheet -= RefreshTimesheet;
         comunicationSrv.SendChangeWidth(false);
     }
 
@@ -266,39 +285,40 @@
             return;   
         }
 
-        comunicationSrv.SendNotification(new Notification
+        DateTime period = GetPeriod();
+        var response = await approvalSrv.CreateRegularTimeRequest(new RegularTimeApprovalRequest
+            {
+                StartDate = DateFunctions.GetPeriodStartDate(period),
+                EndDate = DateFunctions.GetPeriodLastDate(period),
+                Period = period
+            });
+
+        if (response.Data)
+        {
+            await timesheetSrv.GetApprovalsHistory();
+            comunicationSrv.SendNotification(new Notification
                 {
                     NotificationType = NotificationType.Success,
                     Message = "Regular time request created successfully."
                 });
 
-        // DateTime period = GetPeriod();
-        // var response = await approvalSrv.CreateRegularTimeRequest(new RegularTimeApprovalRequest
-        //     {
-        //         StartDate = DateFunctions.GetPeriodStartDate(period),
-        //         EndDate = DateFunctions.GetPeriodLastDate(period),
-        //         Period = period
-        //     });
-
-        // if (response.Data)
-        // {
-        //     comunicationSrv.SendNotification(new Notification
-        //         {
-        //             NotificationType = NotificationType.Success,
-        //             Message = "Regular time request created successfully."
-        //         });
-        // }
-        // else
-        // {
-        //     comunicationSrv.SendNotification(new Notification
-        //         {
-        //             NotificationType = NotificationType.Error,
-        //             Message = errorMessage
-        //         });
-        // }
-
+            StateHasChanged();
+        }
+        else
+        {
+            comunicationSrv.SendNotification(new Notification
+                {
+                    NotificationType = NotificationType.Error,
+                    Message = errorMessage
+                });
+        }
     }
 
     private DateTime GetPeriod() 
         => DateFunctions.GetPeriod(_selectedYear.Value, _selectedMonth.Value, _selectedPeriod.Value);
+
+    private void RefreshTimesheet()
+    {
+        StateHasChanged();   
+    }
 }

@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Timesheet.Api.Models;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
+using Timesheet.Shared.Utils;
 
 namespace Timesheet.Api.Repositories.EF_Implementations
 {
@@ -29,7 +31,8 @@ namespace Timesheet.Api.Repositories.EF_Implementations
         public bool UpdateApprovalStatus(int[] ids)
         {
             _db.TimesheetControl.Where(x => ids.Contains(x.TimesheetPeriodId))
-                .ExecuteUpdate(s => s.SetProperty(x => x.ApprovalStatusId, 2));
+                .ExecuteUpdate(s => 
+                    s.SetProperty(x => x.ApprovalStatusId, (int)ApprovalStatusOption.Approved));
 
             return true;
         }
@@ -129,6 +132,24 @@ namespace Timesheet.Api.Repositories.EF_Implementations
             TimesheetControl result = _db.TimesheetControl.AsNoTracking()
                                                           .FirstOrDefault(x => x.TimesheetPeriod.Date == period.Date && x.UserId == userId);
             return _mapper.Map<TimesheetControlDto>(result);
+        }
+
+        public List<TimesheetControlDto> GetFutureTimesheetControlRecords(DateTime currentPeriod, int userId)
+        {
+            List<TimesheetControl> result = _db.TimesheetControl
+                .AsNoTracking()
+                .Where(x => x.UserId == userId && x.TimesheetPeriod > currentPeriod.Date)
+                .ToList();
+            return _mapper.Map<List<TimesheetControlDto>>(result);
+        }
+
+        public bool UpdateUserTemplate(int[] ids, int newUserTemplate)
+        {
+            _db.TimesheetControl.Where(x => ids.Contains(x.TimesheetPeriodId))
+                .ExecuteUpdate(s =>
+                    s.SetProperty(x => x.UserTemplateId, newUserTemplate));
+
+            return true;
         }
 
     }

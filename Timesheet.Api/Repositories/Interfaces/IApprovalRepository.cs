@@ -6,7 +6,7 @@ namespace Timesheet.Api.Repositories.Interfaces
 {
     public interface IApprovalRepository
     {
-        bool SaveApprovalRequest(ApprovalDto approvalRequest);
+        int SaveApprovalRequest(ApprovalDto approvalRequest);
         IEnumerable<ApprovalDto> GetTimeOffRecords(DateTime period);
         ApprovalDto GetTimeoffById(int id);
         bool DeleteTimeoffRecord(ApprovalDto timeoff);
@@ -19,5 +19,7 @@ namespace Timesheet.Api.Repositories.Interfaces
         bool DeleteApprovalRequests(int[] ids);
         bool DeleteTimesheetRecordApproval(DateTime period, int userId);
         IEnumerable<ApprovalDto> GetRegularTimeApprovals(int userId, DateTime period);
+        List<ApprovalDto> GetFutureApprovals(DateTime currentPeriod, int userId);
+        bool UpdateApprovals(IEnumerable<ApprovalDto> approvals);
     }
 }

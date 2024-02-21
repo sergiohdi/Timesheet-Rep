@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Timesheet.Client.Extensions;
 using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
+using Timesheet.Client.Utils;
 using Timesheet.Shared.Utils;
 
 namespace Timesheet.Client.Services.Implementations;
@@ -12,11 +14,16 @@ public class TimesheetService : ITimesheetService
 {
     private readonly ITimesheetControlDataService _timesheetControlDataSrv;
     private readonly ITimesheetDataService _timesheetDataSvc;
+    private readonly IApprovalHistoryService _approvalHistoryService;
 
-    public TimesheetService(ITimesheetControlDataService timesheetControlDataSrv, ITimesheetDataService timesheetDataSvc)
+    public TimesheetService(ITimesheetControlDataService timesheetControlDataSrv, 
+                            ITimesheetDataService timesheetDataSvc,
+                            IApprovalHistoryService approvalHistoryService
+        )
     {
         _timesheetControlDataSrv = timesheetControlDataSrv;
         _timesheetDataSvc = timesheetDataSvc;
+        _approvalHistoryService = approvalHistoryService;
     }
 
     public DateTime StartPeriod { get; private set; }
@@ -24,6 +31,8 @@ public class TimesheetService : ITimesheetService
     public List<TimesheetItem> TimesheetData { get; private set; } = new();
     public TimesheetControl TimesheetControl { get; private set; }
     public Dictionary<DateTime, decimal> TotalHoursPerDay { get; private set; } = new();
+    public List<GetApprovalsHistory> ApprovalsHistory { get; private set; } = new();
+    public List<TimeEntryDetails> TimeEntryDetails { get; private set; } = new();
 
     public void SetStartAndEndPeriod(DateTime date)
     {
@@ -33,12 +42,18 @@ public class TimesheetService : ITimesheetService
 
     public async Task GetTimesheetRecords(int userId, int year, int month, int period)
     {
-        TimesheetData = (await _timesheetDataSvc.GetTimesheetDataByUserAsync(
+        var result = await _timesheetDataSvc.GetTimesheetDataByUserAsync(
             userId,
             year,
             month,
             period
-        )).Data.ToList();
+        );
+
+        if (result.Status == ResponseStatus.Success) 
+        {
+            TimesheetData = result.Data.ToList();
+            SetRegularEntryDetails();
+        }
     }
 
     public async Task GetTimesheetControlRecord(DateTime period)
@@ -105,7 +120,49 @@ public class TimesheetService : ITimesheetService
         StartPeriod = DateTime.MinValue;
         EndPeriod = DateTime.MinValue;
         TimesheetControl = null;
-        TimesheetData = null;
+        TimesheetData = new();
+        ApprovalsHistory = new();
         TotalHoursPerDay = new();
+        TimeEntryDetails = new();
     }
+
+    public async Task GetApprovalsHistory()
+    {
+        var response = await _approvalHistoryService.GetApprovalsHistory(TimesheetControl.TimesheetPeriodId);
+        if (response.Status == ResponseStatus.Success)
+        {
+            ApprovalsHistory = response.Data;
+        }
+    }
+
+    private void SetRegularEntryDetails()
+    {
+        TimeEntryDetails = new();
+
+        TimesheetData.Where(x => x.IsTimeOff == false)
+            .ToList()
+            .ForEach(record =>
+            {
+                record.Entries
+                .Where(y => y.TotalHours > 0)
+                .ToList()
+                .ForEach(entry =>
+                {
+                    TimeEntryDetails.Add(new TimeEntryDetails
+                    {
+                        Date = entry.EntryDate,
+                        DateEntry = entry.EntryDate.ToString("MMM dd, yyyy"),
+                        ClientProject = $"{ record.ClientName } - { record.ProjectName }",
+                        Task = "No Task",
+                        Activity = record.ActivityName,
+                        Time = entry.TotalHours.GetDecimalWithFormat(Constants.decimalFormat),
+                        Comments = entry.Comments.Trim(),
+                        Location = record.Location
+                    });
+                });
+            });
+
+        TimeEntryDetails = TimeEntryDetails.OrderBy(x => x.Date).ToList();
+    }
+
 }

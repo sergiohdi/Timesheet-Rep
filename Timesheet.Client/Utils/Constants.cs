@@ -17,6 +17,7 @@
         public const string approvalEndpoint = "approval";
         public const string substituteEndpoint = "substitute";
         public const string timesheetControlEndpoint = "timesheetcontrol";
+        public const string approvalHistoryEndPoint = "approvalhistory";
         public const string responseError = "An error occurred while processing your request.";
         public const string decimalFormat = "{0:0.00}";
     }

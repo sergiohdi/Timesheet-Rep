@@ -1,11 +1,22 @@
 ﻿using AutoMapper;
+using System;
+using System.Collections.Generic;
 using Timesheet.Api.Models;
 using Timesheet.Api.Models.DTOs;
+using Timesheet.Shared.Utils;
 
 namespace Timesheet.Api.Repositories.Mappers
 {
     public class MapperProfile: Profile
     {
+        private Dictionary<int, string> approvalHistoryStatus = new Dictionary<int, string>
+        {
+            { (int)ApprovalStatusOption.Waiting, "Submitted" },
+            { (int)ApprovalStatusOption.Approved, "Approved" },
+            { (int)ApprovalStatusOption.Rejected, "Rejected" },
+            { (int)ApprovalStatusOption.SupervisorApproval, "Approved by supervisor" }
+        };
+
         public MapperProfile()
         {
             CreateMap<Activity, ActivityDto>().ReverseMap();
@@ -47,6 +58,20 @@ namespace Timesheet.Api.Repositories.Mappers
                 .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.ApprovalStatus.Appstatusname))
                 .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.ApprovalStatusId == 2));
+            CreateMap<ApprovalHistory, GetApprovalHistoryDto>()
+                .ForMember(dest => dest.ActionDate, opt => opt.MapFrom(src => src.ActionDate))
+                .ForMember(dest => dest.ActionType, opt => opt.MapFrom(src => approvalHistoryStatus[src.ActionType.Value]))
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
+                .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments))
+                .ForMember(dest => dest.TimesheetType, opt => opt.MapFrom(src => src.TimesheetType));
+            CreateMap<CreateApprovalRequestDto, ApprovalHistory>()
+                .ForMember(dest => dest.ActionDate, opt => opt.MapFrom(src => DateTime.Now))
+                .ForMember(dest => dest.ActionType, opt => opt.MapFrom(src => src.ActionType))
+                .ForMember(dest => dest.IdUser, opt => opt.MapFrom(src => src.IdUser))
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
+                .ForMember(dest => dest.IdTimesheetControl, opt => opt.MapFrom(src => src.IdTimesheetControl))
+                .ForMember(dest => dest.TimesheetType, opt => opt.MapFrom(src => src.TimesheetType))
+                .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments));
         }
     }
 }

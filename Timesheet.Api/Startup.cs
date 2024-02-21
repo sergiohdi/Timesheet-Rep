@@ -78,6 +78,7 @@ namespace Timesheet.Api
             services.AddTransient<ISubstituteRepository, SubstituteRepository>();
             services.AddTransient<ITimesheetTypeRepository, TimesheetTypeRepository>();
             services.AddTransient<ITimesheetControlRepository, TimesheetControlRepository>();
+            services.AddTransient<IApprovalHistoryRepository, ApprovalHistoryRepository>();
 
             // Business DI Container 
             services.AddTransient<IActivityBusiness, ActivityBusiness>();
@@ -100,6 +101,7 @@ namespace Timesheet.Api
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<ITimesheetTypeBusiness, TimesheetTypeBusiness>();
             services.AddTransient<ITimesheetControlBusiness, TimesheetControlBusiness>();
+            services.AddTransient<IApprovalHistoryBusiness, ApprovalHistoryBusiness>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

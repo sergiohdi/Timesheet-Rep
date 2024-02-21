@@ -12,6 +12,8 @@ namespace Timesheet.Client.Services.Interfaces
         TimesheetControl TimesheetControl { get; }
         List<TimesheetItem> TimesheetData { get; }
         Dictionary<DateTime, decimal> TotalHoursPerDay { get; }
+        List<GetApprovalsHistory> ApprovalsHistory { get; }
+        List<TimeEntryDetails> TimeEntryDetails { get; }
 
         void SetStartAndEndPeriod(DateTime date);
         Task GetTimesheetControlRecord(DateTime period);
@@ -22,5 +24,6 @@ namespace Timesheet.Client.Services.Interfaces
         List<decimal> GetWeekDaysHours();
         bool PeriodGetNegativeValues();
         void ReleaseData();
+        Task GetApprovalsHistory();
     }
 }
