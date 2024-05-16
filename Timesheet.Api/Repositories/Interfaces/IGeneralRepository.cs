@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using Timesheet.Api.Models.DTOs;
 
-namespace Timesheet.Api.Repositories.Interfaces
+namespace Timesheet.Api.Repositories.Interfaces;
+
+public interface IGeneralRepository
 {
-    public interface IGeneralRepository
-    {
-        IEnumerable<GeneralDto> GetGeneralRecords(string group);
-    }
+    IEnumerable<GeneralDto> GetGeneralRecords(string group);
 }

@@ -1,4 +1,6 @@
 ﻿@page "/projects"
+@attribute [Authorize(Roles = GlobalConstants.ADMIN_ROLE)]
+
 @inject IProjectDataService projectService
 @inject IClientDataService clientService
 @inject IUserDataService userService
@@ -8,6 +10,7 @@
 @inject IProjectTeamUserDataService projectTeamUserService
 @inject NavigationManager navManager
 
+@* Todo: move these styles to a new css file *@
 <style>
 
     whitesmoke-tab {

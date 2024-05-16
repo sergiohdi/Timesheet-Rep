@@ -1,28 +1,27 @@
 ﻿using System.Collections.Generic;
 
-namespace Timesheet.Api.Models.DTOs
+namespace Timesheet.Api.Models.DTOs;
+
+public class TimesheetItemDto
 {
-    public class TimesheetItemDto
+    public int Id { get; set; }
+    public int? ClientId { get; set; }
+    public string ClientName { get; set; }
+    public int? ProjectId { get; set; }
+    public string ProjectName { get; set; }
+    public int? ActivityId { get; set; }
+    public string ActivityName { get; set; }
+    public int? TimeOffId { get; set; }
+    public int? ApprovalStatus { get; set;}
+    public int? Billable { get; set; }
+    public string Location { get; set; }
+    public string PONumber { get; set; }
+    public bool IsTimeOff
     {
-        public int Id { get; set; }
-        public int? ClientId { get; set; }
-        public string ClientName { get; set; }
-        public int? ProjectId { get; set; }
-        public string ProjectName { get; set; }
-        public int? ActivityId { get; set; }
-        public string ActivityName { get; set; }
-        public int? TimeOffId { get; set; }
-        public int? ApprovalStatus { get; set;}
-        public int? Billable { get; set; }
-        public string Location { get; set; }
-        public string PONumber { get; set; }
-        public bool IsTimeOff
+        get
         {
-            get
-            {
-                return this.ClientId is null && this.ProjectId is null && this.ActivityId is null;
-            }
+            return this.ClientId is null && this.ProjectId is null && this.ActivityId is null;
         }
-        public List<TimesheetEntryDto> Entries { get; set; }
     }
+    public List<TimesheetEntryDto> Entries { get; set; }
 }

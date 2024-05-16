@@ -2,10 +2,9 @@
 using System.Threading.Tasks;
 using Timesheet.Client.Models;
 
-namespace Timesheet.Client.Services.Interfaces
+namespace Timesheet.Client.Services.Interfaces;
+
+public interface ITimesheetTypeDataService
 {
-    public interface ITimesheetTypeDataService
-    {
-        Task<ApiResponse<IEnumerable<TimesheetType>>> GetTimesheetTypes();
-    }
+    Task<ApiResponse<IEnumerable<TimesheetType>>> GetTimesheetTypes();
 }

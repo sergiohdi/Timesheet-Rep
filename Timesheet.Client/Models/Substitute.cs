@@ -1,10 +1,10 @@
-﻿namespace Timesheet.Client.Models
+﻿namespace Timesheet.Client.Models;
+
+public class Substitute
 {
-    public class Substitute
-    {
-        public int SubId { get; set; }
-        public int UserId { get; set; }
-        public int SubstituteId { get; set; }
-    }
+    public int SubId { get; set; }
+    public int UserId { get; set; }
+    public int SubstituteId { get; set; }
+    public string SubstituteName { get; set; }
 }
 

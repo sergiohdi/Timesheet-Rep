@@ -2,34 +2,36 @@
 using Microsoft.Extensions.Logging;
 using System.Linq;
 using Timesheet.Api.Business.Interfaces;
+using Timesheet.Api.CustomFilters;
+using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/employeetype")]
+[AuthorizeRoles((int)UserRole.Admin)]
+public class EmployeeTypeController: ControllerBase
 {
-    [ApiController]
-    [Route("api/employeetype")]
-    public class EmployeeTypeController: ControllerBase
+    private readonly IEmployeeTypeBusiness _employeeTypeBusiness;
+    private readonly ILogger<EmployeeTypeController> _logger;
+
+    public EmployeeTypeController(IEmployeeTypeBusiness employeeTypeBusiness, ILogger<EmployeeTypeController> logger)
     {
-        private readonly IEmployeeTypeBusiness _employeeTypeBusiness;
-        private readonly ILogger<EmployeeTypeController> _logger;
+        _employeeTypeBusiness = employeeTypeBusiness;
+        _logger = logger;
+    }
 
-        public EmployeeTypeController(IEmployeeTypeBusiness employeeTypeBusiness, ILogger<EmployeeTypeController> logger)
+    [HttpGet]
+    public IActionResult GetEmployeeTypes()
+    {
+        try
         {
-            _employeeTypeBusiness = employeeTypeBusiness;
-            _logger = logger;
+            return Ok(_employeeTypeBusiness.GetEmployeeTypes().ToList());
         }
-
-        [HttpGet]
-        public IActionResult GetEmployeeTypes()
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_employeeTypeBusiness.GetEmployeeTypes().ToList());
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting employee types");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting employee types");
         }
     }
 }

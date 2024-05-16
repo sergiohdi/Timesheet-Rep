@@ -46,3 +46,29 @@ function getAllCheckedUsers() {
     return checkedUsers;
 }
 
+
+function getCookie(cname) {
+    // Split the cookie string into an array of key-value pairs
+    const cookies = document.cookie.split(';');
+
+    for (let i = 0; i < cookies.length; i++) {
+        let c = cookies[i];
+
+        // Trim leading and trailing whitespace
+        c = c.trim();
+
+        // Check if the current cookie name matches the requested name
+        if (c.indexOf(cname + '=') === 0) {
+            // Extract the value after the '=' sign
+            return c.substring(cname.length + 1);
+        }
+    }
+
+    // If the cookie is not found, return an empty string
+    return "";
+}
+
+
+
+
+

@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Timesheet.Client.Models
+namespace Timesheet.Client.Models;
+
+public class RegularTimeApprovalRequest : Approval
 {
-    public class RegularTimeApprovalRequest : Approval
-    {
-        public DateTime Period { get; set; }
-    }
+    public DateTime Period { get; set; }
 }

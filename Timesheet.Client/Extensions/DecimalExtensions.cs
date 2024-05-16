@@ -1,10 +1,9 @@
-﻿namespace Timesheet.Client.Extensions
+﻿namespace Timesheet.Client.Extensions;
+
+public static class DecimalExtensions
 {
-    public static class DecimalExtensions
+    public static string GetDecimalWithFormat(this decimal value, string format) 
     {
-        public static string GetDecimalWithFormat(this decimal value, string format) 
-        {
-            return string.Format(format, value);
-        }
+        return string.Format(format, value);
     }
 }

@@ -2,93 +2,67 @@
 using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
-using Timesheet.Api.Repositories.Repositories.EF_Implementations;
 
-namespace Timesheet.Api.Business.Implementations
+namespace Timesheet.Api.Business.Implementations;
+
+public class ActivityBusiness : IActivityBusiness
 {
-    public class ActivityBusiness : IActivityBusiness
+    private readonly IActivityRepository _activityRepository;
+    private readonly ITimesheetDataRepository _timesheetDataRepository;
+
+    public ActivityBusiness(
+        IActivityRepository activityRepository, 
+        ITimesheetDataRepository timesheetDataRepository,
+        IUserActivityCodeRepository userActivityCodeRepository)
     {
-        private readonly IActivityRepository _activityRepository;
-        private readonly ITimesheetDataRepository _timesheetDataRepository;
-        private readonly IUserActivityCodeRepository _userActivityCodeRepository;
+        _activityRepository = activityRepository;
+        _timesheetDataRepository = timesheetDataRepository;
+    }
 
-        public ActivityBusiness(
-            IActivityRepository activityRepository, 
-            ITimesheetDataRepository timesheetDataRepository,
-            IUserActivityCodeRepository userActivityCodeRepository)
-        {
-            _activityRepository = activityRepository;
-            _timesheetDataRepository = timesheetDataRepository;
-            _userActivityCodeRepository = userActivityCodeRepository;
-        }
-        public IEnumerable<ActivityDto> GetActivities(bool? disabled)
-        {
-            return _activityRepository.GetActivities(disabled);
-        }
+    public IEnumerable<ActivityDto> GetActivities(bool? disabled) => _activityRepository.GetActivities(disabled);
 
-        public IEnumerable<ActivityDto> GetActivitiesForUser()
-        {
-            return _activityRepository.GetActivitiesForUser();
-        }
+    public IEnumerable<ActivityDto> GetActivitiesForUser() => _activityRepository.GetActivitiesForUser();
 
-        public ActivityDto GetActivityById(int activityId)
-        {
-            return _activityRepository.GetActivityById(activityId);
-        }
+    public ActivityDto GetActivityById(int activityId) => _activityRepository.GetActivityById(activityId);
 
-        public bool CreateActivity(ActivityDto activity)
-        {
-            return _activityRepository.CreateActivity(activity);
-        }
+    public bool CreateActivity(ActivityDto activity) => _activityRepository.CreateActivity(activity);
 
-        public bool UpdateActivity(ActivityDto activity)
+    public bool UpdateActivity(ActivityDto activity) => _activityRepository.UpdateActivity(activity);
+
+    public bool DeleteActivity(int activityId)
+    {
+        // Validate if the activity exists
+        ActivityDto activity = _activityRepository.GetActivityById(activityId);
+        if (activity is null)
         {
-            return _activityRepository.UpdateActivity(activity);
+            return false;
+        }
+        
+        // Validate if the activity is used in any Timesheet
+        bool isUsedActivityInTimesheet = _timesheetDataRepository.ValidateTimesheetByActivityId(activityId);
+        
+        // validate if the activity is used in any UserActivityCode
+        if (isUsedActivityInTimesheet)
+        {
+            return false;
         }
 
-        //public bool UpdateActivityState(int activityId)
-        //{
-        //    ActivityDto activity = _activityRepository.GetActivityById(activityId);
-        //    activity.Disabled = !activity.Disabled;
-
-        //    return _activityRepository.UpdateActivityState(activity);
-        //}
-
-        public bool DeleteActivity(int activityId)
+        bool result;
+        try
         {
-            // Validate if the activity exists
-            ActivityDto activity = _activityRepository.GetActivityById(activityId);
-            if (activity is null)
+            result = _activityRepository.DeleteActivity(activity);
+        }
+
+        catch (System.Exception ex)
+        {
+            if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
             {
-                return false;
-            }
-            
-            // Validate if the activity is used in any Timesheet
-            bool isUsedActivityInTimesheet = _timesheetDataRepository.ValidateTimesheetByActivityId(activityId);
-            
-            // validate if the activity is used in any UserActivityCode
-            if (isUsedActivityInTimesheet)
-            {
-                return false;
+                throw;
             }
 
-            bool result;
-            try
-            {
-                result = _activityRepository.DeleteActivity(activity);
-            }
-
-            catch (System.Exception ex)
-            {
-                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
-                {
-                    throw;
-                }
-
-                result = false;
-            }
-
-            return result;            
+            result = false;
         }
+
+        return result;            
     }
 }

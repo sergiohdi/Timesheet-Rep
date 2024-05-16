@@ -1,117 +1,149 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using Timesheet.Api.Business.Interfaces;
+using Timesheet.Api.CustomFilters;
 using Timesheet.Api.Models.DTOs;
+using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/client")]
+public class ClientController : ControllerBase
 {
-    [ApiController]
-    [Route("api/client")]
-    public class ClientController : ControllerBase
+    private readonly IClientBusiness _clientBusiness;
+    private readonly ILogger<ClientController> _logger;
+
+    public ClientController(IClientBusiness clientBusiness, ILogger<ClientController> logger)
     {
-        private readonly IClientBusiness _clientBusiness;
-        private readonly ILogger<ClientController> _logger;
+        _clientBusiness = clientBusiness;
+        _logger = logger;
+    }
 
-        public ClientController(IClientBusiness clientBusiness, ILogger<ClientController> logger)
+    [HttpGet]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(IEnumerable<ClientDto>), 200)]
+    [ProducesResponseType(typeof(void), 403)] 
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)] 
+    public IActionResult GetClients([FromQuery]bool? disabled)
+    {
+        try
         {
-            _clientBusiness = clientBusiness;
-            _logger = logger;
+           return Ok(_clientBusiness.GetClients(disabled));
         }
-
-        [HttpGet]
-        public IActionResult GetClients([FromQuery]bool? disabled)
+        catch (Exception ex)
         {
-            try
-            {
-               return Ok(_clientBusiness.GetClients(disabled));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting clients");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting clients");
         }
+    }
 
-        [HttpGet("fordrop")]
-        public IActionResult GetClientsForDropDown()
+    [HttpGet("fordrop")]
+    [ProducesResponseType(typeof(IEnumerable<ClientLightDto>), 200)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult GetClientsForDropDown()
+    {
+        try
         {
-            try
-            {
-                return Ok(_clientBusiness.GetClientsForDropDown());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting clients");
-            }
+            return Ok(_clientBusiness.GetClientsForDropDown());
         }
-
-        [HttpGet("{clientId}")]
-        public IActionResult GetClient([FromRoute] int clientId)
+        catch (Exception ex)
         {
-            try
-            {
-                return Ok(_clientBusiness.GetClientById(clientId));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting client");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting clients");
         }
+    }
 
-        [HttpPost]
-        public IActionResult CreateClient(ClientDto client)
+    [HttpGet("{clientId}")]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(ClientDto), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult GetClient([FromRoute] int clientId)
+    {
+        try
         {
-            ActionResult result;
-            try
-            {
-                result = Ok(_clientBusiness.CreateClient(client));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-
-                if (ex.InnerException.Message.Contains("Violation of UNIQUE KEY constraint 'UC_Client_Name'"))
-                {
-                    result = BadRequest($"Client already exist");
-                }
-                else 
-                {
-                    result = StatusCode(500, "An error occurred creating client");
-                }
-            }
-
-            return result;
+            return Ok(_clientBusiness.GetClientById(clientId));
         }
-
-        [HttpPut]
-        public IActionResult UpdateClient(ClientDto client)
+        catch (Exception ex)
         {
-            try
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting client");
+        }
+    }
+
+    [HttpPost]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(bool), 200)]
+    [ProducesResponseType(typeof(string), 400)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(void), 500)]
+    public IActionResult CreateClient(ClientDto client)
+    {
+        ActionResult result;
+        try
+        {
+            result = Ok(_clientBusiness.CreateClient(client));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+
+            if (ex.InnerException.Message.Contains("Violation of UNIQUE KEY constraint 'UC_Client_Name'"))
             {
-                return Ok(_clientBusiness.UpdateClient(client));
+                result = BadRequest($"Client already exist");
             }
-            catch (Exception ex)
+            else 
             {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred updating client");
+                result = StatusCode(500, "An error occurred creating client");
             }
         }
 
-        [HttpDelete("{clientId}")]
-        public IActionResult DeleteClient(int clientId)
+        return result;
+    }
+
+    [HttpPut]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(bool), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult UpdateClient(ClientDto client)
+    {
+        try
         {
-            try
-            {
-                return Ok(_clientBusiness.DeleteClient(clientId));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred deleting a client");
-            }
+            return Ok(_clientBusiness.UpdateClient(client));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred updating client");
+        }
+    }
+
+    [HttpDelete("{clientId}")]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(bool), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult DeleteClient(int clientId)
+    {
+        try
+        {
+            return Ok(_clientBusiness.DeleteClient(clientId));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred deleting a client");
         }
     }
 }

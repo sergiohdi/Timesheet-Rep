@@ -3,27 +3,28 @@ using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 
-namespace Timesheet.Api.Business.Implementations
+namespace Timesheet.Api.Business.Implementations;
+
+public class SubstituteBusiness : ISubstituteBusiness
 {
-    public class SubstituteBusiness : ISubstituteBusiness
+    private readonly ISubstituteRepository _substituteRepository;
+
+    public SubstituteBusiness(ISubstituteRepository substituteRepository) => _substituteRepository = substituteRepository;
+
+    public IEnumerable<SubstituteDto> GetSubstitutesByUserId(int userId)
     {
-        private readonly ISubstituteRepository _substituteRepository;
+        return _substituteRepository.GetUsersSubstituteByUserId(userId);
+    }
 
-        public SubstituteBusiness(ISubstituteRepository substituteRepository)
-        {
-            _substituteRepository = substituteRepository;
-        }
+    public IEnumerable<KeyValuePair<int, string>> GetSubstitutesByEmp(int userId)
+    {
+        return _substituteRepository.GetSubstitutesByEmp(userId);
+    }
 
-        public IEnumerable<SubstituteDto> GetSubstitutesByUserId(int userId)
-        {
-            return _substituteRepository.GetUsersSubstituteByUserId(userId);
-        }
+    public bool UpdateSubstitutes(List<SubstituteDto> substitutes, int userId)
+    {
+        _substituteRepository.RemoveSubstitutes(userId);
 
-        public bool UpdateSubstitutes(List<SubstituteDto> substitutes, int userId)
-        {
-            _substituteRepository.RemoveSubstitutes(userId);
-
-            return _substituteRepository.InsertSubstitutes(substitutes);
-        }
+        return _substituteRepository.InsertSubstitutes(substitutes);
     }
 }

@@ -155,7 +155,7 @@
     [Parameter]
     public IEnumerable<TimeOff> TimeOffItems { get; set; } = new List<TimeOff>();
     [Parameter]
-    public EventCallback<bool> OnClosePopUp { get; set; }
+    public EventCallback<ResultOperation> OnClosePopUp { get; set; }
 
     private List<DateTime> _weekendDates = new List<DateTime>();
     private DateTime _minDate;
@@ -207,6 +207,7 @@
             TimeoffApproval.UserId = systemUserId;
             TimeoffApproval.ApprovalStatusId = (int)ApprovalStatusOption.Waiting;
             TimeoffApproval.ApprovalType = (int)ApprovalType.Timeoff;
+            TimeoffApproval.TimesheetControlId = timeSheetSrv.TimesheetControl.TimesheetPeriodId;
 
             result = await approvalSrv.CreateTimeoffRequest(TimeoffApproval);
         }
@@ -215,14 +216,13 @@
             result = await approvalSrv.UpdateTimeoffRecord(TimeoffApproval.ApprovalId, TimeoffApproval);
         }
 
-        if (result.Status == ResponseStatus.Success && !result.Data)
+        if (result.Status == ResponseStatus.Success && result.Data)
         {
-            _openTimeoffDialogPopUp = true;
-            return;
+            await OnClosePopUp.InvokeAsync(ResultOperation.Success);
         }
         else
         {
-            await OnClosePopUp.InvokeAsync(true);
+            await OnClosePopUp.InvokeAsync(ResultOperation.Error);
         }
 
         ChangeButtonsStatus();
@@ -235,7 +235,7 @@
         var result = await approvalSrv.DeleteTimeoffRecord(TimeoffApproval.ApprovalId);
         if (result.Status == ResponseStatus.Success && result.Data)
         {
-            await OnClosePopUp.InvokeAsync(true);
+            await OnClosePopUp.InvokeAsync(ResultOperation.Success);
         }
         ChangeButtonsStatus();
     }
@@ -248,6 +248,6 @@
 
     private async Task ClosePopUp()
     {
-        await OnClosePopUp.InvokeAsync(false);
+        await OnClosePopUp.InvokeAsync(ResultOperation.Nothing);
     }
 }

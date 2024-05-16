@@ -1,9 +1,7 @@
-﻿using Timesheet.Client.Services.Interfaces;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Collections.Generic;
-using Timesheet.Client.Models;
+using Timesheet.Client.Services.Interfaces;
 using Timesheet.Shared.Utils;
-using Newtonsoft.Json.Linq;
 
 namespace Timesheet.Client.Services.Implementations;
 

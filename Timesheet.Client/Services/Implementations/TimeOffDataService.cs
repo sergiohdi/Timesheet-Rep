@@ -5,28 +5,27 @@ using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
 using Timesheet.Client.Utils;
 
-namespace Timesheet.Client.Services.Implementations
+namespace Timesheet.Client.Services.Implementations;
+
+public class TimeOffDataService : ITimeOffDataService
 {
-    public class TimeOffDataService : ITimeOffDataService
+    private readonly BaseDataService _baseService;
+
+    public TimeOffDataService(BaseDataService baseService)
     {
-        private readonly BaseDataService _baseService;
+        _baseService = baseService;
+    }
 
-        public TimeOffDataService(BaseDataService baseService)
+    public async Task<ApiResponse<IEnumerable<TimeOff>>> GetTimeOffs()
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList("timeoff");
+        return new ApiResponse<IEnumerable<TimeOff>>
         {
-            _baseService = baseService;
-        }
-
-        public async Task<ApiResponse<IEnumerable<TimeOff>>> GetTimeOffs()
-        {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList("timeoff");
-            return new ApiResponse<IEnumerable<TimeOff>>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-                    ? JsonConvert.DeserializeObject<List<TimeOff>>(data)
-                    : new List<TimeOff>()
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+                ? JsonConvert.DeserializeObject<List<TimeOff>>(data)
+                : new List<TimeOff>()
+        };
     }
 }

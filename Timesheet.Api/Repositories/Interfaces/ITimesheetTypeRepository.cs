@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using Timesheet.Api.Models.DTOs;
 
-namespace Timesheet.Api.Repositories.Interfaces
+namespace Timesheet.Api.Repositories.Interfaces;
+
+public interface ITimesheetTypeRepository
 {
-    public interface ITimesheetTypeRepository
-    {
-        IEnumerable<TimesheetTypeDto> GetTimesheetTypes();
-    }
+    IEnumerable<TimesheetTypeDto> GetTimesheetTypes();
 }

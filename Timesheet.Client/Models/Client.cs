@@ -33,6 +33,7 @@ namespace Timesheet.Client.Models
         public string OriginalCode { get; set; }
 
         public string Group { get; set; }
+        // Todo: check if this property is needed
         // public ICollection<Project> Projects { get; set; }
     }
 }

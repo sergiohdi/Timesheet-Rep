@@ -2,33 +2,32 @@
 using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
 
-namespace Timesheet.Client.Services.Implementations
+namespace Timesheet.Client.Services.Implementations;
+
+public class ComponentComunicationService : IComponentComunicationService
 {
-    public class ComponentComunicationService : IComponentComunicationService
+    public event Action<Notification> Subscriber;
+    public event Action<bool> ChangeWidthSubscriber;
+    public event Action OpenTimeOffPopUp;
+    public event Action RefreshTimesheet;
+
+    public void SendChangeWidth(bool value)
     {
-        public event Action<Notification> Subscriber;
-        public event Action<bool> ChangeWidthSubscriber;
-        public event Action OpenTimeOffPopUp;
-        public event Action RefreshTimesheet;
+        ChangeWidthSubscriber?.Invoke(value);
+    }
 
-        public void SendChangeWidth(bool value)
-        {
-            ChangeWidthSubscriber?.Invoke(value);
-        }
+    public void SendNotification(Notification notification)
+    {
+        Subscriber?.Invoke(notification);
+    }
 
-        public void SendNotification(Notification notification)
-        {
-            Subscriber?.Invoke(notification);
-        }
+    public void SendOpenPopUpAction()
+    {
+        OpenTimeOffPopUp.Invoke();
+    }
 
-        public void SendOpenPopUpAction()
-        {
-            OpenTimeOffPopUp.Invoke();
-        }
-
-        public void SendRefreshTimesheetAction() 
-        {
-            RefreshTimesheet.Invoke();
-        }
+    public void SendRefreshTimesheetAction() 
+    {
+        RefreshTimesheet.Invoke();
     }
 }

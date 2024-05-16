@@ -57,6 +57,7 @@ namespace Timesheet.Api.Models
         public int? SupervisorId { get; set; }
         public int TimesheetTemplate { get; set; }
         public string Password { get; set; }
+        public int? Attempts { get; set; }
 
         public virtual Department Department { get; set; }
         public virtual EmployeeType EmpType { get; set; }

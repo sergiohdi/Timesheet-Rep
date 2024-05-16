@@ -41,28 +41,29 @@ namespace Timesheet.Api.Controllers
             }
         }
 
-        [HttpPost]
-        public IActionResult AddApprovalHistory(CreateApprovalRequestDto approvalHistory)
-        {
-             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+        // Todo: Check if this method is usefull
+        //[HttpPost]
+        //public IActionResult AddApprovalHistory(CreateApprovalRequestDto approvalHistory)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
 
-            try
-            {
-                // Temp lines
-                approvalHistory.IdUser = 579;
-                approvalHistory.UserName = "Sergio Barbosa";
-                // Temp lines
-                return Ok(_approvalHistoryBusiness.CreateApprovalHistory(approvalHistory));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred deleting timeoff record");
-            }
+        //    try
+        //    {
+        //        // Temp lines
+        //        approvalHistory.IdUser = 579;
+        //        approvalHistory.UserName = "Sergio Barbosa";
+        //        // Temp lines
+        //        return Ok(_approvalHistoryBusiness.CreateApprovalHistory(approvalHistory));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex.Message);
+        //        return StatusCode(500, "An error has occurred deleting timeoff record");
+        //    }
         
-        }
+        //}
     }
 }

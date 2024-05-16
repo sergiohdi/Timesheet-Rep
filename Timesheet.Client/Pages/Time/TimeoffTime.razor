@@ -41,12 +41,8 @@
                     </td>
                     @foreach (var entry in item.Record.Entries)
                     {
-                        <td @onclick=@(() => OnTimeOffTextClick(item.Record.TimeOffId.Value, entry.EntryDate))>
-                            <div class="timeoff-value @(entry.TotalHours > 0 ? "cursor-pointer" : "")" >
-                                <div>
-                                    @GetDayHours(entry.TotalHours)
-                                </div>
-                            </div>
+                        <td class="@(entry.TotalHours > 0 ? "cursor-pointer" : "")" @onclick=@(() => OnTimeOffTextClick(item.Record.TimeOffId.Value, entry.EntryDate))>
+                            <ReadOnlyComponent Value="@GetDayHours(entry.TotalHours)" />
                         </td>
                     }
                     <td class="total">
@@ -91,7 +87,7 @@
 
     // Temp Variables
     // Replace this user id value for user id token claim
-    private int systemUserId = 579;
+    private int systemUserId = 0;
 
     private TimeoffApproval timeoffApproval;
     Dictionary<int, string> cssNames = new Dictionary<int, string>()
@@ -110,21 +106,13 @@
         _timeOffItems = (await timeOffSvc.GetTimeOffs()).Data.Where(x => x.Disabled == false).ToList();
     }
 
-    public void Dispose()
-    {
-        notificationSrv.OpenTimeOffPopUp -= OpenTimeOffPopUp;
-    }
+    public void Dispose() => notificationSrv.OpenTimeOffPopUp -= OpenTimeOffPopUp;
 
-    private string GetDayHours(decimal time)
-    {
-        return time > 0 ? time.GetDecimalWithFormat(Constants.decimalFormat) : string.Empty;
-    }
-
-    private string GetTimeOffEntryComment(int timeOffId, int day)
-    {
-        return timeSheetSrv.TimesheetData.FirstOrDefault(x => x.TimeOffId == timeOffId)
-                             ?.Entries.FirstOrDefault(y => y.Day == day)?.Comments;
-    }
+    private string GetDayHours(decimal time) => 
+        time > 0 ? time.GetDecimalWithFormat(Constants.decimalFormat) : string.Empty;
+   
+    private string GetTimeOffEntryComment(int timeOffId, int day) =>
+        timeSheetSrv.TimesheetData.FirstOrDefault(x => x.TimeOffId == timeOffId)?.Entries.FirstOrDefault(y => y.Day == day)?.Comments;
 
     private void OpenTimeOffPopUp()
     {
@@ -148,11 +136,17 @@
         return value;
     }
 
-    private async Task OnTimeoffAction(bool response)
+    private async Task OnTimeoffAction(ResultOperation response)
     {
-        if (response)
+        if (response == ResultOperation.Success)
         {
             await OnTimeOffAction.InvokeAsync();   
+        }
+
+        if (response == ResultOperation.Error)
+        {
+            _openTimeoffDialogPopUp = true;
+            return;
         }
 
         _openTimeOffPopUp = false;

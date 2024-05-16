@@ -2,47 +2,46 @@
 using Microsoft.Extensions.Logging;
 using Timesheet.Api.Business.Interfaces;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/general")]
+public class GeneralController : ControllerBase
 {
-    [ApiController]
-    [Route("api/general")]
-    public class GeneralController : ControllerBase
+    private readonly IGeneralBusiness _generalBusiness;
+    private readonly ILogger<ActivityController> _logger;
+
+    public GeneralController(IGeneralBusiness generalBusiness, ILogger<ActivityController> logger)
     {
-        private readonly IGeneralBusiness _generalBusiness;
-        private readonly ILogger<ActivityController> _logger;
+        _generalBusiness = generalBusiness;
+        _logger = logger;
+    }
 
-        public GeneralController(IGeneralBusiness generalBusiness, ILogger<ActivityController> logger)
+    [HttpGet]
+    public IActionResult GetGeneralRecords(string group)
+    {
+        try
         {
-            _generalBusiness = generalBusiness;
-            _logger = logger;
+            return Ok(_generalBusiness.GetGeneralRecords(group));
         }
-
-        [HttpGet]
-        public IActionResult GetGeneralRecords(string group)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_generalBusiness.GetGeneralRecords(group));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured getting general records");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occured getting general records");
         }
+    }
 
-        [HttpGet("weekenddates")]
-        public IActionResult GetWeekendDates()
+    [HttpGet("weekenddates")]
+    public IActionResult GetWeekendDates()
+    {
+        try
         {
-            try
-            {
-                return Ok(_generalBusiness.GetWeekendDates());
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occured getting weekend dates");
-            }
+            return Ok(_generalBusiness.GetWeekendDates());
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occured getting weekend dates");
         }
     }
 }

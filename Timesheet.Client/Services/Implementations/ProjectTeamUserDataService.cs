@@ -6,46 +6,45 @@ using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
 using Timesheet.Client.Utils;
 
-namespace Timesheet.Client.Services.Implementations
+namespace Timesheet.Client.Services.Implementations;
+
+public class ProjectTeamUserDataService : IProjectTeamUserDataService
 {
-    public class ProjectTeamUserDataService : IProjectTeamUserDataService
+
+    private readonly BaseDataService _baseService;
+
+    public ProjectTeamUserDataService(BaseDataService baseService)
     {
+        _baseService = baseService;
+    }
 
-        private readonly BaseDataService _baseService;
-
-        public ProjectTeamUserDataService(BaseDataService baseService)
-        {
-            _baseService = baseService;
+    public async Task<ApiResponse<bool>> AddProjectTeamMembers(int projectId, List<int> usersId)
+    {
+        if (!usersId.Any()) { 
+            usersId.Add(0);
         }
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.Create($"{Constants.ProjectHasUserEndpoint}/{projectId}", usersId);
 
-        public async Task<ApiResponse<bool>> AddProjectTeamMembers(int projectId, List<int> usersId)
+        return new ApiResponse<bool>
         {
-            if (!usersId.Any()) { 
-                usersId.Add(0);
-            }
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.Create($"{Constants.ProjectHasUserEndpoint}/{projectId}", usersId);
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+        };
+    }
 
-            return new ApiResponse<bool>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-            };
-        }
+    public async Task<ApiResponse<IEnumerable<ProjectTeamUser>>> GetProjectTeamMembers(int projectId)
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList($"{Constants.ProjectHasUserEndpoint}/{projectId}");
 
-        public async Task<ApiResponse<IEnumerable<ProjectTeamUser>>> GetProjectTeamMembers(int projectId)
+        return new ApiResponse<IEnumerable<ProjectTeamUser>>
         {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList($"{Constants.ProjectHasUserEndpoint}/{projectId}");
-
-            return new ApiResponse<IEnumerable<ProjectTeamUser>>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-                    ? JsonConvert.DeserializeObject<List<ProjectTeamUser>>(data)
-                    : new List<ProjectTeamUser>()
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+                ? JsonConvert.DeserializeObject<List<ProjectTeamUser>>(data)
+                : new List<ProjectTeamUser>()
+        };
     }
 }
 

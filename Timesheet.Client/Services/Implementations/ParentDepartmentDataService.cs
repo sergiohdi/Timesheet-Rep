@@ -5,28 +5,27 @@ using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
 using Timesheet.Client.Utils;
 
-namespace Timesheet.Client.Services.Implementations
+namespace Timesheet.Client.Services.Implementations;
+
+public class ParentDepartmentDataService : IParentDepartmentDataService
 {
-    public class ParentDepartmentDataService : IParentDepartmentDataService
+    private readonly BaseDataService _baseService;
+
+    public ParentDepartmentDataService(BaseDataService baseService)
     {
-        private readonly BaseDataService _baseService;
+        _baseService = baseService;
+    }
 
-        public ParentDepartmentDataService(BaseDataService baseService)
+    public async Task<ApiResponse<IEnumerable<ParentDepartment>>> GetParentDepartments()
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList("parentdepartment");
+        return new ApiResponse<IEnumerable<ParentDepartment>>
         {
-            _baseService = baseService;
-        }
-
-        public async Task<ApiResponse<IEnumerable<ParentDepartment>>> GetParentDepartments()
-        {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList("parentdepartment");
-            return new ApiResponse<IEnumerable<ParentDepartment>>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-                    ? JsonConvert.DeserializeObject<List<ParentDepartment>>(data)
-                    : new List<ParentDepartment>()
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+                ? JsonConvert.DeserializeObject<List<ParentDepartment>>(data)
+                : new List<ParentDepartment>()
+        };
     }
 }

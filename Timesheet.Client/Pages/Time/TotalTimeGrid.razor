@@ -1,0 +1,38 @@
+﻿@inject ITimesheetService timesheetSrv
+@inject IComponentComunicationService comunicationSrv
+
+@implements IDisposable
+
+
+<table class="table table-bordered time-grid custom-margin-table">
+    <thead class="thead-time-grid">
+        <tr>
+            <th style="width: 30px;"></th>
+            <th rowspan="3" class="row-timeoff">Total</th>
+            @if (timesheetSrv.TotalHoursPerDay.Any())
+            {
+                @foreach (var item in timesheetSrv.TotalHoursPerDay)
+                {
+                    <th class="row-day">@item.Value.GetDecimalWithFormat(Constants.decimalFormat)</th>
+                }
+            }
+            <th style="width: 50px">&nbsp;</th>
+            <th style="width: 65px">&nbsp;</th>
+            <th class="row-billable">&nbsp;</th>
+            <th style="width: 70px">&nbsp;</th>
+        </tr>
+    </thead>
+</table>
+
+
+@code {
+    protected override void OnInitialized() => 
+        comunicationSrv.RefreshTimesheet += RefreshTotalHoursPerDay;
+
+    public void Dispose() =>
+        comunicationSrv.RefreshTimesheet -= RefreshTotalHoursPerDay;
+    
+
+    private void RefreshTotalHoursPerDay() => StateHasChanged();
+
+}

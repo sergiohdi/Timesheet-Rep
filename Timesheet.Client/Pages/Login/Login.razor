@@ -1,16 +1,16 @@
 ﻿@page "/login"
-@inject IUserDataService userService
-@inject NavigationManager navManager
+@layout MinimalLayout
+@using System.Web
+@using Telerik.Blazor.Components
 
+
+@inject IUserDataService userService
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService localStorageSrv
+@inject NavigationManager navManager
+@inject AuthenticationStateProvider authProvider
 
 <style>
-    .login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh; /* Use 100vh to take the full height of the viewport */
-    }
-
     .login-form {
         width: 100%;
         max-width: 400px; /* Adjust this value based on your preference */
@@ -60,85 +60,194 @@
     }
 
     .demo-section {
+        margin-top: 15vh;
+        border-radius: 8px;
         position: relative;
-        top: 10%;
     }
+
+    .top-right {
+        float: right;
+    }
+
+    .long-button {
+        width: 110px; /* Adjust width as needed */
+    }
+
+    .text-link {
+        background-color: transparent;
+        color: dimgray;
+        padding: 0;
+        border: none;
+        /* text-decoration: underline; */
+        cursor: pointer;
+    }
+
+        .text-link:hover {
+            text-decoration: none;
+        }
+
 </style>
 
 <div class="demo-section d-flex justify-content-center align-items-center">
     <TelerikForm Model="@loginModel"
-                Class="login-form"
-                OnValidSubmit="@HandleValidSubmit"
-                OnInvalidSubmit="@HandleInvalidSubmit">
-    <FormValidation>
-      <DataAnnotationsValidator></DataAnnotationsValidator>
-    </FormValidation>
-    <FormItems>
-        
-      <FormItem Field="@nameof(Timesheet.Client.Models.User.Email)">
-        <Template>
-                    <label class="k-label k-form-label h3-label">Timesheet Login</label>
-          <div style="margin-bottom: 1rem;"></div>
-          <label for="mail" class="k-label k-form-label">Email</label>
-          <TelerikTextBox Id="mail" @bind-Value="@loginModel.Email" InputMode="email" Placeholder="example@domain.com"></TelerikTextBox>
-          <TelerikValidationMessage For="@(() => loginModel.Email)"></TelerikValidationMessage>
-        </Template>
-      </FormItem>
-      <FormItem Field="@nameof(Timesheet.Client.Models.User.Password)">
-        <Template>
-          <label for="pass" class="k-label k-form-label">Password*</label>
-          <TelerikTextBox Id="pass" @bind-Value="@loginModel.Password" Password="true"></TelerikTextBox>
-          <TelerikValidationMessage For="@(() => loginModel.Password)"></TelerikValidationMessage>
-        </Template>
-      </FormItem>
-    </FormItems>
-    <FormButtons>
-      <TelerikButton Icon="@nameof(FontIcon.Binoculars)" Class="colorbutton">Login ></TelerikButton>
-    </FormButtons>
-  </TelerikForm>
+                 Class="login-form"
+                 OnValidSubmit="@HandleValidSubmit"
+                 OnInvalidSubmit="@HandleInvalidSubmit">
+        <FormValidation>
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+        </FormValidation>
+        <FormItems>
+
+            <FormItem>
+                <Template>
+                    <img src="images/HDI.png"  class="top-right" style="width: 90px; display: block; margin-bottom: 20px;" />
+                    <br />
+                    <br />
+                </Template>
+            </FormItem>
+
+            <FormItem>
+                <Template>
+                    <label class="k-label k-form-label h3-label">Timesheet</label>
+                </Template>
+            </FormItem>
+
+            <FormItem Field="@nameof(Timesheet.Client.Models.Login.Email)">
+                <Template>
+                    <div>
+                        <div>
+                            <label for="email" class="k-label k-form-label">Email:</label>
+                            <TelerikTextBox Id="email" @bind-Value="@loginModel.Email" Width="85%"></TelerikTextBox>
+                            <TelerikValidationMessage For="@(() => loginModel.Email)"></TelerikValidationMessage>
+                        </div>
+                    </div>
+                </Template>
+            </FormItem>
+
+            <FormItem Field="@nameof(Timesheet.Client.Models.Login.Password)">
+                <Template>
+                    <div>
+                        <div>
+                            <label for="pass" class="k-label k-form-label">Password:</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <TelerikTextBox Id="pass" @bind-Value="@loginModel.Password" Password="@HidePassword" Width="85%"></TelerikTextBox>
+                            <TelerikButton OnClick="@RevealPassword"
+                                           Icon="@SvgIcon.Eye"
+                                           ThemeColor="@(ThemeConstants.Button.ThemeColor.Primary)"
+                                           ButtonType="ButtonType.Button"></TelerikButton>
+                        </div>
+                        <TelerikValidationMessage For="@(() => loginModel.Password)"></TelerikValidationMessage>
+                    </div>
+                </Template>
+            </FormItem>
+
+            <FormItem Field="@nameof(Timesheet.Client.Models.Login.RememberMe)">
+                <Template>
+                    <label for="rememberMe" class="k-label k-form-label">Remember Me:</label>
+                    <TelerikCheckBox Id="rememberMe" @bind-Value="@loginModel.RememberMe"></TelerikCheckBox>
+                </Template>
+            </FormItem>
+
+        </FormItems>
+
+        <FormButtons>
+            <TelerikButton Icon="@nameof(FontIcon.Binoculars)" Class="colorbutton long-button" Enabled="@IsButtonEnabled">Login ></TelerikButton>          
+        </FormButtons>
+
+    </TelerikForm>
 </div>
 
-
-@if (loginFailed)
-{
-    <div class="k-form-error">Invalid email or password</div>
-}
-
 @code {
-    private Timesheet.Client.Models.User loginModel = new Timesheet.Client.Models.User();
-    private bool loginFailed = false;
-
     public bool ValidSubmit { get; set; } = false;
+    public bool HidePassword { get; set; } = true;
+    public bool IsButtonEnabled { get; set; } = true;
 
-    async void HandleValidSubmit()
+    private Timesheet.Client.Models.Login loginModel = new Timesheet.Client.Models.Login();
+    private string input = "_zdiklaxm";
+    private string cookieValue = "";
+    private bool isDialogOpen = false;
+    private bool validUser = false;
+
+    public void RevealPassword()
     {
-        ValidSubmit = true;
-
-        await Task.Delay(2000);
-
-        ValidSubmit = false;
-
+        HidePassword = !HidePassword;
         StateHasChanged();
     }
 
-    void HandleInvalidSubmit()
+    protected override async Task OnInitializedAsync()
     {
-        ValidSubmit = false;
+        var authState = await authProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            navManager.NavigateTo("/");
+            return;
+        }
+
+        ((JwtAuthStateProvider)authProvider).LogOut();
+        cookieValue = await JSRuntime.InvokeAsync<string>("getCookie", input);
+
+        if (!string.IsNullOrEmpty(cookieValue))
+        {
+            string jsonData = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(cookieValue));
+            loginModel = System.Text.Json.JsonSerializer.Deserialize<Timesheet.Client.Models.Login>(jsonData);
+
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    // private async Task HandleLoginFormSubmit()
-    // {
-    //     loginFailed = !await AuthenticateUser(loginModel.Email, loginModel.Password);
-    //     if (!loginFailed)
-    //     {
-    //         navManager.NavigateTo("/activity");
-    //     }
-    // }
+    private async Task HandleValidSubmit()
+    {
+        IsButtonEnabled = false;
 
-    // private Task<bool> AuthenticateUser(string Email, string Password)
-    // {
-    //     // Implement actual authentication logic here
-    //     // This is just a placeholder for demonstration
-    //     return Task.FromResult(true);
-    // }
+        ApiResponse<LoginResponse> response = null;
+
+        try
+        {
+            ValidSubmit = true;
+            response = await userService.VerifyLogin(loginModel);
+            bool validUser = response.Data.IsSuccess;
+
+            if (!validUser)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Invalid email or password");
+                ValidSubmit = false;
+                IsButtonEnabled = true;
+                return;
+            }
+
+            await localStorageSrv.SetItemAsync("token", response.Data.Token);
+
+            if (loginModel.RememberMe)
+            {
+                string jsonData = System.Text.Json.JsonSerializer.Serialize(loginModel);
+                string dataBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(jsonData));  
+
+                string cookieName = "_zdiklaxm";
+                string cookieValue = dataBase64;
+                
+                string expiryDate = DateTime.Now.AddDays(90).ToString("R"); // Set the cookie to expire in 90 days
+                string script = $@"document.cookie = ""{cookieName}="" + ""{cookieValue}"" + "";expires={expiryDate}; path=/"";";
+
+                await JSRuntime.InvokeVoidAsync("eval", script);
+            }
+
+            navManager.NavigateTo("/timesheet");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+            ValidSubmit = false;
+        }
+        StateHasChanged();
+    }
+
+
+    private async Task HandleInvalidSubmit()
+    {
+        ValidSubmit = false;
+        await JSRuntime.InvokeVoidAsync("alert", "Invalid email or password");
+    }
+
+
 }

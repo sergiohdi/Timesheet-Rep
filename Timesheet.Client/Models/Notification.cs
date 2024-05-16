@@ -1,8 +1,7 @@
-﻿namespace Timesheet.Client.Models
+﻿namespace Timesheet.Client.Models;
+
+public class Notification
 {
-    public class Notification
-    {
-        public string NotificationType { get; set; }
-        public string Message { get; set; }
-    }
+    public string NotificationType { get; set; }
+    public string Message { get; set; }
 }

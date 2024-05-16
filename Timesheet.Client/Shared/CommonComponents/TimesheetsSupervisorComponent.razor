@@ -1,6 +1,7 @@
 ﻿@inject IApprovalDataService approvalService
 @inject IComponentComunicationService notificationSrv
 
+@* Todo: move these styles to a new css file *@
 <style>
     .colorbutton {
         background-color: #ff5c1a;
@@ -166,11 +167,11 @@ else
     private async Task ApproveSelected()
     {
         IsButtonEnabled = false;
-        List<int> selectedTimeoffs = _regularTimeRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+        List<int> selectedRegularTimeRecords = _regularTimeRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
 
-        if (selectedTimeoffs.Any())
+        if (selectedRegularTimeRecords.Any())
         {
-            var response = await approvalService.ApproveTimeoffRequests(selectedTimeoffs);
+            var response = await approvalService.ApproveRegularRequests(selectedRegularTimeRecords);
             await GetRegularTimeRequests();
         }
     }
@@ -178,11 +179,11 @@ else
     private async Task RejectSelected()
     {
         IsButtonEnabled = false;
-        List<int> selectedTimeoffs = _regularTimeRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
+        List<int> selectedRegularTimeRecords = _regularTimeRequests.Where(t => t.IsSelected).Select(x => x.ApprovalId).ToList();
 
-        if (selectedTimeoffs.Any())
+        if (selectedRegularTimeRecords.Any())
         {
-            var response = await approvalService.RejectTimesheetsRequests(selectedTimeoffs);
+            var response = await approvalService.RejectRegularRequests(selectedRegularTimeRecords);
             await GetRegularTimeRequests();
             StateHasChanged();
         }

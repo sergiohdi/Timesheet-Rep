@@ -7,6 +7,8 @@
 @inject ITimesheetService timeSheetSrv
 @inject IJSRuntime js
 
+@implements IDisposable
+
 <table class="table table-bordered time-grid">
     <thead class="thead-time-grid">
         <tr>
@@ -33,19 +35,22 @@
             {
                 <tr>
                     <td class="icon-cell">
-                        <span>
-                            @if (item.Record.IsNewRecord)
-                            {
-                                <i title="Pending to save" class="fas fa-save" style="color:red;"></i>
-                            }
-                            else
-                            {
-                                <i title="Delete row" class="fas fa-trash-alt" @onclick="@(() => OpenDeleteDialog(item.Record))"></i>
-                            }
-                        </span>
+                        @if (_enableControls)
+                        {
+                            <span>
+                                @if (item.Record.IsNewRecord)
+                                {
+                                    <i title="Pending to save" class="fas fa-save" style="color:red;"></i>
+                                }
+                                else
+                                {
+                                    <i title="Delete row" class="fas fa-trash-alt" @onclick="@(() => OpenDeleteDialog(item.Record))"></i>
+                                }
+                            </span>
+                        }
                     </td>
                     <td>
-                        <TelerikDropDownList Data="@_clients"
+                        <TelerikDropDownList Data="@ClientList"
                                              @bind-Value="item.Record.ClientId"
                                              TextField="@nameof(Client.Name)"
                                              ValueField="@nameof(Client.Id)"
@@ -54,7 +59,8 @@
                                              Filterable="true"
                                              FilterOperator="StringFilterOperator.Contains"
                                              FilterDebounceDelay="200"
-                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Client, true))">
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Client, true))"
+                                             Enabled="@_enableControls">
                             <DropDownListSettings>
                                 <DropDownListPopupSettings Width="400px"></DropDownListPopupSettings>
                             </DropDownListSettings>
@@ -70,14 +76,15 @@
                                              Filterable="true"
                                              FilterOperator="StringFilterOperator.Contains"
                                              FilterDebounceDelay="200"
-                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Project, true))">
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Project, true))"
+                                             Enabled="@_enableControls">
                             <DropDownListSettings>
                                 <DropDownListPopupSettings Width="400px"></DropDownListPopupSettings>
                             </DropDownListSettings>
                         </TelerikDropDownList>
                     </td>
                     <td>
-                        <TelerikDropDownList Data="@_userActivities"
+                        <TelerikDropDownList Data="@UserActivities"
                                              @bind-Value="@item.Record.ActivityId"
                                              TextField="@nameof(Activity.ActivityName)"
                                              ValueField="@nameof(Activity.ActivityId)"
@@ -86,7 +93,8 @@
                                              Filterable="true"
                                              FilterOperator="StringFilterOperator.Contains"
                                              FilterDebounceDelay="200"
-                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Activity, true))">
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Activity, true))"
+                                             Enabled="@_enableControls">
                             <DropDownListSettings>
                                 <DropDownListPopupSettings Width="400px"></DropDownListPopupSettings>
                             </DropDownListSettings>
@@ -95,7 +103,7 @@
                     @foreach (var entry in item.Record.Entries)
                     {
                         <td>
-                            @if (!item.Record.IsNewRecord)
+                            @if (_enableControls && !item.Record.IsNewRecord)
                             {
                                 <div class="cell-container @(ValidateEntryComment(entry.Comments) ? "highlight-textbox": "")">
                                     <TimesheetInputText InValue=@GetDayHours(entry.TotalHours)
@@ -105,6 +113,32 @@
                                                         OnOpenPopup=OpenPopUp />
                                 </div>
                             }
+                            else
+                            {
+                                if (ValidateEntryComment(entry.Comments))
+                                {
+                                    <TelerikTooltip TargetSelector=".readonly-comment" ShowOn="@TooltipShowEvent.Hover">
+                                        <Template>
+                                            @{
+                                                var dataAttributes = context.DataAttributes;
+                                                var title = context.Title;
+                                                <div style="width: 300px;">
+                                                    @title
+                                                </div>
+                                            }
+                                        </Template>
+                                    </TelerikTooltip>
+                                    <div class="cell-container highlight-textbox readonly-comment" title="@entry.Comments">
+                                        <ReadOnlyComponent Value="@GetDayHours(entry.TotalHours)" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="cell-container">
+                                        <ReadOnlyComponent Value="@GetDayHours(entry.TotalHours)" />
+                                    </div>
+                                }
+                            }
                         </td>
                     }
                     <td class="total">
@@ -113,11 +147,23 @@
                         </span>
                     </td>
                     <td>
-                        <input type="text"
-                               class="custom-form-control"
-                               @bind="item.Record.PONumber"
-                               style="width: 100%;"
-                               @onblur="@(() => OnBaseRecordChanged(item.Record, Property.PONumber, false))" />
+                        @if (_enableControls)
+                        {
+                            <input type="text"
+                                   class="custom-form-control"
+                                   @bind="item.Record.PONumber"
+                                   style="width: 100%;"
+                                   @onblur="@(() => OnBaseRecordChanged(item.Record, Property.PONumber, false))" />
+
+                        }
+                        else
+                        {
+                            <input type="text"
+                                   class="custom-form-control"
+                                   @bind="item.Record.PONumber"
+                                   style="width: 100%;"
+                                   @onblur="@(() => OnBaseRecordChanged(item.Record, Property.PONumber, false))" disabled />
+                        }
                     </td>
                     <td>
                         <TelerikDropDownList Data=BillingStatusList
@@ -126,7 +172,7 @@
                                              ValueField="@nameof(General.GralId)"
                                              Size="@ThemeConstants.DropDownList.Size.Small"
                                              Width="100%"
-                                             Enabled="item.Record.EnableBillableDrop"
+                                             Enabled="_enableControls && item.Record.EnableBillableDrop"
                                              OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Billing, false))">
                             <DropDownListSettings>
                                 <DropDownListPopupSettings Width="120px"></DropDownListPopupSettings>
@@ -134,13 +180,14 @@
                         </TelerikDropDownList>
                     </td>
                     <td>
-                        <TelerikDropDownList Data="@_locations"
+                        <TelerikDropDownList Data="@LocationList"
                                              @bind-Value="item.Record.Location"
                                              TextField="@nameof(General.Value)"
                                              ValueField="@nameof(General.Value)"
                                              Size="@ThemeConstants.DropDownList.Size.Small"
                                              Width="100%"
-                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Location, false))">
+                                             OnChange="@(() => OnBaseRecordChanged(item.Record, Property.Location, false))"
+                                             Enabled="@_enableControls">
                             <DropDownListSettings>
                                 <DropDownListPopupSettings Width="120px"></DropDownListPopupSettings>
                             </DropDownListSettings>
@@ -209,23 +256,19 @@
     [Parameter]
     public List<ProjectLight> ProjectList { get; set; }
     [Parameter]
+    public List<ClientLight> ClientList { get; set; }
+    [Parameter]
+    public List<UserActivityCodeLight> UserActivities { get; set; }
+    [Parameter]
+    public List<General> LocationList { get; set; }
+    [Parameter]
     public EventCallback OnRegularTimeCreated { get; set; }
-
 
     // Temp Variables
     // Replace this user id value for user id token claim
-    private int systemUserId = 579;
+    private int systemUserId = 0;
 
-    private List<ClientLight> _clients = new List<ClientLight>
-    {
-        new ClientLight { Id = 0, Name = "Select a client"}
-    };
-    private IEnumerable<General> _locations = null;
     private IEnumerable<TimeOff> _timeOffItems = null;
-    private List<UserActivityCodeLight> _userActivities = new List<UserActivityCodeLight>
-    {
-        new UserActivityCodeLight { ActivityId = 0, ActivityName = "Select an activty"}
-    };
     private bool _openCommentPopUp = false;
     private bool _openDeleteDialogPopUp = false;
     private bool _closeCommentPopup = false;
@@ -235,20 +278,17 @@
     private TimesheetInput _inputInfo;
     private Property selectedProperty;
     private string _tempString;
+    private bool _enableControls = true;
 
-    protected async override Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        var tasks = new List<Task>
-        {
-            clientSrv.GetClientsForDropDown().ContinueWith(task => _clients.AddRange(task.Result.Data)),
-            userSrv.GetActivitiesByUserForDropDown(systemUserId).ContinueWith(task => _userActivities.AddRange(task.Result.Data)),
-            generalSrv.GetGeneralValues("Location").ContinueWith(task => _locations = task.Result.Data.ToList())
-        };
-
-        await Task.WhenAll(tasks);
+        notificationSrv.RefreshTimesheet += RefreshTimesheet;
+        RefreshTimesheet();
         _tempString = SetTempString();
     }
 
+    public void Dispose() => notificationSrv.RefreshTimesheet -= RefreshTimesheet;
+    
     private void CalculateHours() =>
         timeSheetSrv.TimesheetData.ForEach(record => record.TotalHoursPerRow = record.Entries.Sum(x => x.TotalHours).GetDecimalWithFormat(Constants.decimalFormat));
 
@@ -311,7 +351,8 @@
 
         CalculateHours();
 
-        ApiResponse<long> response = await timesheetDataSvc.UpdateTimesheetHours(systemUserId, new TimesheetItem
+        // Todo: on substitute feature change 0 for selected user id
+        ApiResponse<long> response = await timesheetDataSvc.UpdateTimesheetHours(0, new TimesheetItem
             {
                 Id = record.Id,
                 ClientId = record.ClientId,
@@ -341,21 +382,14 @@
         _inputInfo = null;
     }
 
-    private string GetDayHours(decimal time)
-    {
-        return time != 0 ? time.GetDecimalWithFormat(Constants.decimalFormat) : string.Empty;
-    }
+    private string GetDayHours(decimal time) => 
+        time != 0 ? time.GetDecimalWithFormat(Constants.decimalFormat) : string.Empty;
 
-    private bool ValidateEntryComment(string comments)
-    {
-        return !string.IsNullOrEmpty(comments);
-    }
+    private bool ValidateEntryComment(string comments) => !string.IsNullOrEmpty(comments);
 
-    private string GetRegularEntryComment(TimesheetItem filters, int day)
-    {
-        return timeSheetSrv.TimesheetData.FirstOrDefault(x => x.ClientId == filters.ClientId && x.ProjectId == filters.ProjectId && x.ActivityId == filters.ActivityId)
+    private string GetRegularEntryComment(TimesheetItem filters, int day) => 
+        timeSheetSrv.TimesheetData.FirstOrDefault(x => x.ClientId == filters.ClientId && x.ProjectId == filters.ProjectId && x.ActivityId == filters.ActivityId)
                              ?.Entries.FirstOrDefault(y => y.Day == day)?.Comments;
-    }
 
     private (RecordType recordType, int clientId, int projectId, int activityId, int timeOffId, int day) GetDataFromId(string id)
     {
@@ -413,9 +447,9 @@
             return;
         }
 
-        await timesheetDataSvc.UpdateTimesheetBaseProperties(new UpdateTimesheetBasePropertiesRequest
+        // Todo: on substitute feature change 0 for selected user id
+        await timesheetDataSvc.UpdateTimesheetBaseProperties(0, new UpdateTimesheetBasePropertiesRequest
             {
-                UserId = systemUserId,
                 TimesheetItem = item,
                 Action = item.IsNewRecord ? TimesheetItemAction.Add : TimesheetItemAction.Update,
                 Property = property,
@@ -451,7 +485,8 @@
     private async Task DeleteTimesheetItem()
     {
         _openDeleteDialogPopUp = false;
-        await timesheetDataSvc.DeleteTimesheetRecord(systemUserId, recordSelected);
+        // Todo: on substitute feature change 0 for selected user id
+        await timesheetDataSvc.DeleteTimesheetRecord(0, recordSelected);
         await OnRegularTimeCreated.InvokeAsync();
         recordSelected = null;
 
@@ -479,5 +514,9 @@
             x.PONumber
         }));
     }
+
+    private void RefreshTimesheet() => 
+        _enableControls = timeSheetSrv.TimesheetControl.ApprovalStatusId == (int)ApprovalStatusOption.NotSubmitted;
+    
 }
 

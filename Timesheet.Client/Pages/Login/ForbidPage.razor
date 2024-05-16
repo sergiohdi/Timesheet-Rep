@@ -1,0 +1,46 @@
+@page "/unauthorized"
+
+<style>
+.unauth-container {
+    text-align: center;
+    padding: 50px;
+    color: #333;
+    background-color: #fff4f4;
+}
+
+.unauth-container .icon {
+    width: 100px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.unauth-container h1 {
+    color: #d8000c;
+}
+
+.unauth-container p {
+    margin: 20px 0;
+    color: #666;
+}
+
+.unauth-container .links a {
+    margin-right: 15px;
+    color: #0077cc;
+    text-decoration: none;
+}
+
+.unauth-container .links a:hover {
+    text-decoration: underline;
+}
+</style>
+
+<PageTitle>Unauthorized Access</PageTitle>
+
+<div class="unauth-container">
+    <img src="images/Lock_icon.png" alt="Lock Icon" class="icon">
+    <h1>You are not authorized to access this page.</h1>
+    <p>Sorry, you do not have the necessary permissions to view this page. Please check your login status or contact support if you believe this is an error.</p>
+    <div class="links">
+        <a href="javascript:history.back()">Go Back</a>
+    </div>
+</div>

@@ -2,140 +2,192 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Linq;
 using Timesheet.Api.Business.Interfaces;
+using Timesheet.Api.Extensions;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Models.Requests;
 using Timesheet.Api.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/timesheetdata")]
+public class TimesheetDataController : ControllerBase
 {
-    [ApiController]
-    [Route("api/timesheetdata")]
-    public class TimesheetDataController : ControllerBase
+    private readonly ITimesheetDataBusiness _timesheetDataBusiness;
+    private readonly IUserSelectActBusiness _userSelectActBusiness;
+    private readonly ILogger<TimesheetDataController> _logger;
+
+    public TimesheetDataController(
+        ITimesheetDataBusiness timesheetDataBusiness, 
+        IUserSelectActBusiness userSelectActBusiness,
+        ILogger<TimesheetDataController> logger)
     {
-        private readonly ITimesheetDataBusiness _timesheetDataBusiness;
-        private readonly IUserSelectActBusiness _userSelectActBusiness;
-        private readonly ILogger<TimesheetDataController> _logger;
+        _timesheetDataBusiness = timesheetDataBusiness;
+        _userSelectActBusiness = userSelectActBusiness;
+        _logger = logger;
+    }
 
-        public TimesheetDataController(
-            ITimesheetDataBusiness timesheetDataBusiness, 
-            IUserSelectActBusiness userSelectActBusiness,
-            ILogger<TimesheetDataController> logger)
+    [HttpGet]
+    public IActionResult GetTimesheetData(
+        [FromQuery] int userId, 
+        [FromQuery] int year, 
+        [FromQuery] int month, 
+        [FromQuery] int period
+    )
+    {
+        if (year == 0 || month == 0 || period == 0)
         {
-            _timesheetDataBusiness = timesheetDataBusiness;
-            _userSelectActBusiness = userSelectActBusiness;
-            _logger = logger;
+            return BadRequest(ModelState);
         }
 
-        [HttpGet]
-        public IActionResult GetTimesheetData([FromQuery] int userId, [FromQuery] int year, [FromQuery] int month, [FromQuery] int period)
-        {
-            if (userId == 0 || year == 0 || month == 0 || period == 0)
-            {
-                return BadRequest(ModelState);
-            }
+        bool validRole = new UserRoleValidation(userId, HttpContext.GetUserRoleInt())
+                .IsValidUserId()
+                .IsNotAdminOrWtsRole()
+                .IsValidRole();
 
-            try
-            {
-                return Ok(_timesheetDataBusiness.GetTimesheetData(new TimesheetRequestDto 
-                {
-                    UserId = userId,
-                    Year = year,
-                    Month = month,
-                    Period = period
-                }));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting timesheet data");
-            }
+        if (!validRole)
+        {
+            return Forbid();
         }
 
-        [HttpPut]
-        public IActionResult UpdateTimesheetBaseProperties([FromBody] UpdateTimesheetBasePropertiesRequest request)
+        try
         {
-            _logger.LogInformation("Enter to update timesheet base properties endpoint");
-
-            if (request == null)
+            userId = userId == 0 ? HttpContext.GetUserIdInt() : userId;
+            return Ok(_timesheetDataBusiness.GetTimesheetData(new TimesheetRequestDto 
             {
-                return BadRequest(ModelState);
-            }
+                UserId = userId,
+                Year = year,
+                Month = month,
+                Period = period
+            }));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting timesheet data");
+        }
+    }
 
-            try
-            {
-                List<TimesheetItemDto> items = new List<TimesheetItemDto>();
-                UserSelectActDto existingUserPreferences = _userSelectActBusiness.GetUserPreferences(request.UserId);
-                if (existingUserPreferences != null)
-                {
-                    items = JsonConvert.DeserializeObject<List<TimesheetItemDto>>(existingUserPreferences.Activities);
-                }
-
-                // Update user preferences
-                if (request.IsBaseProperty)
-                {
-                    _userSelectActBusiness.UpdateUserPreferences(request, items);
-                }
-
-                // Update timesheet records
-                if (request.Action == TimesheetItemAction.Update && request.TimesheetItem.Entries.Exists(x => x.Id > 0))
-                {
-                    _timesheetDataBusiness.UpdateTimesheetBaseInformation(request.TimesheetItem, request.Property);
-                }
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred updating user preferences");
-            }
-
-            return Ok();
+    [HttpPut("{userId}/base")]
+    public IActionResult UpdateTimesheetBaseProperties(
+        [FromRoute] int userId, 
+        [FromBody] UpdateTimesheetBasePropertiesRequest request)
+    {
+        _logger.LogInformation("Enter to update timesheet base properties endpoint");
+        if (request == null)
+        {
+            return BadRequest(ModelState);
         }
 
-        [HttpPut("{userId}")]
-        public IActionResult UpdateTimesheetHours([FromRoute] int userId, [FromBody] TimesheetItemDto record)
-        {
-            if (!ModelState.IsValid || record == null)
-            {
-                return BadRequest(ModelState);
-            }
+        bool validRole = new UserRoleValidation(userId,HttpContext.GetUserRoleInt())
+                .IsValidUserId()
+                .IsNotAdminOrWtsRole()
+                .IsValidRole();
 
-            try
-            {
-                return Ok( _timesheetDataBusiness.UpdateTimesheetHours(userId, record) );
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred updating user hours");
-            }
+        if (!validRole)
+        {
+            return Forbid();
         }
 
-        [HttpPost("{userId}")]
-        public IActionResult DeleteTimesheetRecord([FromRoute] int userId, [FromBody] TimesheetItemDto item)
+        userId = userId == 0 ? HttpContext.GetUserIdInt() : userId;
+
+        try
         {
-            if (!ModelState.IsValid || item is null)
+            List<TimesheetItemDto> items = new List<TimesheetItemDto>();
+            UserSelectActDto existingUserPreferences = _userSelectActBusiness.GetUserPreferences(userId);
+            if (existingUserPreferences != null)
             {
-                return BadRequest(ModelState);
+                items = JsonConvert.DeserializeObject<List<TimesheetItemDto>>(existingUserPreferences.Activities);
             }
 
-            UserSelectActDto currentUserPreferences = _userSelectActBusiness.GetUserPreferences(userId);
-            if (currentUserPreferences is null)
+            // Update user preferences
+            if (request.IsBaseProperty)
             {
-                return NotFound();
+                _userSelectActBusiness.UpdateUserPreferences(userId, request, items);
             }
 
-            // Delete user preferences
-            _userSelectActBusiness.DeleteUserPreferences(
-                userId, 
-                item.Id, 
-                JsonConvert.DeserializeObject<List<TimesheetItemDto>>(currentUserPreferences.Activities));
-
-            // Delete timesheet records
-            _timesheetDataBusiness.DeleteTimesheetRecords(item);
-
-            return Ok();
+            // Update timesheet records
+            if (request.Action == TimesheetItemAction.Update && request.TimesheetItem.Entries.Exists(x => x.Id > 0))
+            {
+                _timesheetDataBusiness.UpdateTimesheetBaseInformation(request.TimesheetItem, request.Property);
+            }
         }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred updating user preferences");
+        }
+
+        return Ok();
+    }
+
+    [HttpPut("{userId}/hours")]
+    public IActionResult UpdateTimesheetHours([FromRoute] int userId, [FromBody] TimesheetItemDto record)
+    {
+        if (!ModelState.IsValid || record == null)
+        {
+            return BadRequest(ModelState);
+        }
+
+        bool validRole = new UserRoleValidation(userId, HttpContext.GetUserRoleInt())
+                .IsValidUserId()
+                .IsNotAdminOrWtsRole()
+                .IsValidRole();
+
+        if (!validRole)
+        {
+            return Forbid();
+        }
+        userId = userId == 0 ? HttpContext.GetUserIdInt() : userId;
+
+        try
+        {
+            return Ok( _timesheetDataBusiness.UpdateTimesheetHours(userId, record) );
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred updating user hours");
+        }
+    }
+
+    // Todo: check if is necessary to send from blazor the userid
+    [HttpPost("{userId}")]
+    public IActionResult DeleteTimesheetRecord([FromRoute] int userId, [FromBody] TimesheetItemDto item)
+    {
+        if (!ModelState.IsValid || item is null)
+        {
+            return BadRequest(ModelState);
+        }
+
+        bool validRole = new UserRoleValidation(userId, HttpContext.GetUserRoleInt())
+                .IsValidUserId()
+                .IsNotAdminOrWtsRole()
+                .IsValidRole();
+
+        if (!validRole)
+        {
+            return Forbid();
+        }
+
+        userId = userId == 0 ? HttpContext.GetUserIdInt() : userId;
+
+        UserSelectActDto currentUserPreferences = _userSelectActBusiness.GetUserPreferences(userId);
+        if (currentUserPreferences is null)
+        {
+            return NotFound();
+        }
+
+        // Delete user preferences
+        _userSelectActBusiness.DeleteUserPreferences(
+            userId, 
+            item.Id, 
+            JsonConvert.DeserializeObject<List<TimesheetItemDto>>(currentUserPreferences.Activities));
+
+        // Delete timesheet records
+        _timesheetDataBusiness.DeleteTimesheetRecords(item);
+
+        return Ok();
     }
 }

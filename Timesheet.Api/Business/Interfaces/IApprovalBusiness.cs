@@ -2,21 +2,22 @@
 using System;
 using Timesheet.Api.Models.DTOs;
 
-namespace Timesheet.Api.Business.Interfaces
+namespace Timesheet.Api.Business.Interfaces;
+
+public interface IApprovalBusiness
 {
-    public interface IApprovalBusiness
-    {
-        bool CreateTimeoffRequest(ApprovalDto approvalRequest);
-        bool CreateRegularTimeRequest(ApprovalDto approvalRequest, int userId);
-        IEnumerable<ApprovalDto> GetTimeOffRecords(DateTime period);
-        bool UpdateTimeoffRecord(ApprovalDto approval);
-        bool DeleteTimeoffRecords(int requestId);
-        IEnumerable<ApprovalTimeoffRequestDto> GetTimeOffRequests(DateTime startDate, DateTime endDate, int userId = 0);
-        IEnumerable<ApprovalDto> GetRegularTimeRequests(DateTime startDate, DateTime endDate, int userId = 0);
-        bool ApproveTimeoffRequests(int[] ids, bool isWTF = true);
-        bool ReopenTimeoffRequests(int[] ids);
-        bool RejectTimeoffSelected(int[] ids);
-        bool RejectTimesheetsRequests(int[] ids);
-        bool DeleteTimeoffRequests(int[] ids);
-    }
+    bool CreateTimeoffRequest(ApprovalDto approvalRequest, int userId, string userName);
+    bool CreateRegularTimeRequest(ApprovalDto approvalRequest, int userId, string userName);
+    IEnumerable<ApprovalDto> GetTimeOffRecords(DateTime period, int userId);
+    bool UpdateTimeoffRecord(ApprovalDto approval, int userId, string userName);
+    bool DeleteTimeoffRecords(int requestId, int userId);
+    IEnumerable<ApprovalTimeoffRequestDto> GetTimeOffRequests(DateTime startDate, DateTime endDate, int userId = 0);
+    IEnumerable<ApprovalDto> GetRegularTimeRequests(DateTime startDate, DateTime endDate, int userId = 0);
+    bool ApproveTimeoffRequests(int[] ids, int userId, string userName);
+    bool ReopenTimeoffRequests(int[] ids, int userId, string userName);
+    bool RejectTimeoffSelected(int[] ids, int userId, string userName);
+    bool RejectTimesheetsRequests(int[] ids);
+    bool DeleteTimeoffRequests(int[] ids);
+    bool ApproveRegularTimeRequests(int[] ids, int userId, string userName);
+    bool RejectRegularTimeRequests(int[] ids, int userId, string userName);
 }

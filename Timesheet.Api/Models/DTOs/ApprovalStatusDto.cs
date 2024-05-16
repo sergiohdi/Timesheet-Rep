@@ -1,8 +1,7 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class ApprovalStatusDto
 {
-    public class ApprovalStatusDto
-    {
-        public int Approvalstatusid { get; set; }
-        public string Appstatusname { get; set; }
-    }
+    public int Approvalstatusid { get; set; }
+    public string Appstatusname { get; set; }
 }

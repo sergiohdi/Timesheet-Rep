@@ -1,9 +1,8 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class TimesheetTypeDto
 {
-    public class TimesheetTypeDto
-    {
-        public int TimeTemplateId { get; set; }
-        public string TemplateName { get; set; }
-        public string TimeTemplateDesc { get; set; }
-    }
+    public int TimeTemplateId { get; set; }
+    public string TemplateName { get; set; }
+    public string TimeTemplateDesc { get; set; }
 }

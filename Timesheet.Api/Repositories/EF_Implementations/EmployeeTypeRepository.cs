@@ -5,28 +5,24 @@ using Timesheet.Api.Models;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 
-namespace Timesheet.Api.Repositories.EF_Implementations
+namespace Timesheet.Api.Repositories.EF_Implementations;
+
+public class EmployeeTypeRepository : IEmployeeTypeRepository
 {
-    public class EmployeeTypeRepository : IEmployeeTypeRepository
+    private readonly TimesheetContext _db;
+    private readonly IMapper _mapper;
+
+    public EmployeeTypeRepository(TimesheetContext db, IMapper mapper)
     {
-        private readonly TimesheetContext _db;
-        private readonly IMapper _mapper;
+        _db = db;
+        _mapper = mapper;
+    }
 
-        public EmployeeTypeRepository(TimesheetContext db, IMapper mapper)
-        {
-            _db = db;
-            _mapper = mapper;
-        }
+    public IEnumerable<EmployeeTypeDto> GetEmployeeTypes() => _mapper.Map<IEnumerable<EmployeeTypeDto>>(_db.EmployeeType);
 
-        public IEnumerable<EmployeeTypeDto> GetEmployeeTypes()
-        {
-            return _mapper.Map<IEnumerable<EmployeeTypeDto>>(_db.EmployeeType);
-        }
-
-        public EmployeeTypeDto GetEmployeeTypeById(int employeeTypeId)
-        {
-            EmployeeType employeeType = _db.EmployeeType.FirstOrDefault(x => x.Emptypeid == employeeTypeId);
-            return _mapper.Map<EmployeeTypeDto>(employeeType);
-        }
+    public EmployeeTypeDto GetEmployeeTypeById(int employeeTypeId)
+    {
+        EmployeeType employeeType = _db.EmployeeType.FirstOrDefault(x => x.Emptypeid == employeeTypeId);
+        return _mapper.Map<EmployeeTypeDto>(employeeType);
     }
 }

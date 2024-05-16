@@ -1,0 +1,26 @@
+﻿@page "/substitute"
+@layout MainLayout
+
+@inject NavigationManager navManager
+
+<style>
+    .form-container {
+        width: 450px;
+        margin-top: 120px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        height: 400px;
+        padding: 20px;
+    }
+</style>
+
+<div class="container form-container">
+    <SubstitutePopUp IsPopup="false" ClosePopup="RedirectToTimesheet" />
+</div>
+
+@code {
+    private void RedirectToTimesheet()
+    {
+        navManager.NavigateTo("/timesheet");
+    }
+}

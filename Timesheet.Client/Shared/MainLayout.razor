@@ -1,8 +1,10 @@
 ﻿@inherits LayoutComponentBase
+
 @inject IComponentComunicationService notificationSrv
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager navManager
+
 @implements IDisposable
-
-
 
 <style>
     .main {
@@ -24,14 +26,23 @@
         color: gold;
         font-size: 38px;
     }
+
+    .navbar-collapse {
+        flex-grow: 0.93;
+    }
 </style>
 
 <TelerikRootComponent>
     <div class="main">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark header black-bg">
-            <TelerikFontIcon Icon="@FontIcon.Clock" class="telerik-icon2" />
+            <div @onclick="GoToHome">
+                <TelerikFontIcon Icon="@FontIcon.Clock" class="telerik-icon2"/>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <NavMenu />
+            </div>
+            <div class="login-info">
+                <LoginDisplay />
             </div>
         </nav>
         <div class="content px-4" style="@((isTimesheet) ? "padding-left: 1rem !important; padding-right: 1rem !important; margin-top:-13px": string.Empty)">
@@ -50,8 +61,12 @@
     TelerikNotification NotificationComponent { get; set; }
     private bool isTimesheet = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        bool result = await ValidateCurrentAuthStatus();
+        if (!result)
+            return;
+
         notificationSrv.Subscriber += NotificationHandler;
         notificationSrv.ChangeWidthSubscriber += ChangeWidthHandler;
     }
@@ -77,4 +92,30 @@
         isTimesheet = value;
         StateHasChanged();
     } 
+
+    private void GoToHome()
+    {
+        navManager.NavigateTo("/");
+    }
+
+    private async Task<bool> ValidateCurrentAuthStatus()
+    {
+        var authState = await authStateProvider.GetAuthenticationStateAsync();
+
+        bool isAuthenticated = authState.User.Identity.IsAuthenticated;
+        if (!isAuthenticated)
+        {
+            navManager.NavigateTo("/login");
+            return false;
+        }
+
+        bool enforcePassWordChange = authState.User.GetForceChangePassword();
+        if (enforcePassWordChange)
+        {
+            navManager.NavigateTo("/change-password");
+            return false;
+        }
+
+        return true;
+    }
 }

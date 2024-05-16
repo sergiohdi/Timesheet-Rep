@@ -30,9 +30,9 @@ public class TimesheetDataService : ITimesheetDataService
         };
     }
 
-    public async Task<ApiResponse<Task>> UpdateTimesheetBaseProperties(UpdateTimesheetBasePropertiesRequest request)
+    public async Task<ApiResponse<Task>> UpdateTimesheetBaseProperties(int userId, UpdateTimesheetBasePropertiesRequest request)
     {
-        (ResponseStatus status, string data, List<string> errors) = await _baseService.Update(Constants.timesheetEndpoint, request);
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.Update($"{Constants.timesheetEndpoint}/{userId}/base", request);
         return new ApiResponse<Task>
         {
             Status = status,
@@ -42,7 +42,7 @@ public class TimesheetDataService : ITimesheetDataService
 
     public async Task<ApiResponse<long>> UpdateTimesheetHours(int userId, TimesheetItem record)
     {
-        (ResponseStatus status, string data, List<string> errors) = await _baseService.Update($"{Constants.timesheetEndpoint}/{userId}", record);
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.Update($"{Constants.timesheetEndpoint}/{userId}/hours", record);
         return new ApiResponse<long>
         {
             Status = status,

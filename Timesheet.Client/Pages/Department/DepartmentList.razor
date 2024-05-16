@@ -1,4 +1,5 @@
 ﻿@page "/departments"
+@attribute [Authorize(Roles = GlobalConstants.ADMIN_ROLE)]
 
 @inject IDepartmentDataService departmentService
 @inject IParentDepartmentDataService parentDepartmentService
@@ -7,6 +8,7 @@
 @inject IComponentComunicationService notificationSrv
 @inject NavigationManager navManager
 
+@* Todo: move these styles to a new css file *@
 <style>
     .colorbutton {
         background-color: #ff5c1a;

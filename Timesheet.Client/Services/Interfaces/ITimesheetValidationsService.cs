@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace Timesheet.Client.Services.Interfaces
+namespace Timesheet.Client.Services.Interfaces;
+
+public interface ITimesheetValidationsService
 {
-    public interface ITimesheetValidationsService
-    {
-        List<string> ValidateTimesheet();
-    }
+    List<string> ValidateTimesheet();
 }

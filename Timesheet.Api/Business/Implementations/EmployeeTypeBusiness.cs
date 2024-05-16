@@ -3,20 +3,13 @@ using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 
-namespace Timesheet.Api.Business.Implementations
+namespace Timesheet.Api.Business.Implementations;
+
+public class EmployeeTypeBusiness : IEmployeeTypeBusiness
 {
-    public class EmployeeTypeBusiness : IEmployeeTypeBusiness
-    {
-        private readonly IEmployeeTypeRepository _employeeTypeRepository;
+    private readonly IEmployeeTypeRepository _employeeTypeRepository;
 
-        public EmployeeTypeBusiness(IEmployeeTypeRepository employeeTypeRepository )
-        {
-            _employeeTypeRepository = employeeTypeRepository;
-        }
+    public EmployeeTypeBusiness(IEmployeeTypeRepository employeeTypeRepository) => _employeeTypeRepository = employeeTypeRepository;
 
-        public IEnumerable<EmployeeTypeDto> GetEmployeeTypes()
-        {
-            return _employeeTypeRepository.GetEmployeeTypes();
-        }
-    }
+    public IEnumerable<EmployeeTypeDto> GetEmployeeTypes() => _employeeTypeRepository.GetEmployeeTypes();
 }

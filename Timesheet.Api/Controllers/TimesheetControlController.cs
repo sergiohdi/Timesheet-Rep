@@ -1,157 +1,172 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Timesheet.Api.Business.Interfaces;
-using Timesheet.Api.Models.DTOs;
-using Timesheet.Api.Business.Implementations;
+using Timesheet.Api.CustomFilters;
+using Timesheet.Api.Extensions;
+using Timesheet.Api.Utils;
+using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/timesheetcontrol")]
+public class TimesheetControlController : ControllerBase
 {
-    [ApiController]
-    [Route("api/timesheetcontrol")]
-    public class TimesheetControlController : ControllerBase
+    private readonly ITimesheetControlBusiness _timesheetControlBusiness;
+    private readonly ILogger<TimesheetControlController> _logger;
+
+    public TimesheetControlController(ITimesheetControlBusiness timesheetControlBusiness, ILogger<TimesheetControlController> logger)
     {
-        private readonly ITimesheetControlBusiness _timesheetControlBusiness;
-        private readonly ILogger<TimesheetControlController> _logger;
+        _timesheetControlBusiness = timesheetControlBusiness;
+        _logger = logger;
+    }
 
-        public TimesheetControlController(ITimesheetControlBusiness timesheetControlBusiness, ILogger<TimesheetControlController> logger)
+    [HttpGet]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult GetTimesheetControl()
+    {
+        try
         {
-            _timesheetControlBusiness = timesheetControlBusiness;
-            _logger = logger;
+            return Ok(_timesheetControlBusiness.GetTimesheetControl());
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting Timesheet Control");
+        }
+    }
+
+    [HttpGet("{userId}")]
+    public IActionResult GetTimesheetControlRecord([FromQuery] string period, [FromRoute] int userId = 0)
+    {
+        try
+        {
+            bool validRole = new UserRoleValidation(userId, HttpContext.GetUserRoleInt())
+                .IsValidUserId()
+                .IsNotAdminOrWtsRole()
+                .IsValidRole();
+
+            if (!validRole)
+            {
+                return Forbid();
+            }
+
+            DateTime.TryParse(period, out DateTime datePeriod);
+            userId = userId == 0
+                ? Convert.ToInt32(HttpContext.GetUserId())
+                : userId;
+            return Ok(_timesheetControlBusiness.GetTimesheetControlRecord(datePeriod, userId));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting Timesheet Control record");
+        }
+    }
+
+    [HttpPut]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult UpdateApprovalStatus([FromBody]int[] timesheetIds)
+    {
+        try
+        {
+            return Ok(_timesheetControlBusiness.UpdateApprovalStatus(timesheetIds));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred updating Timesheet Control");
+        }
+    }
+
+    [HttpPost]
+    public IActionResult CreateTimesheetControlRecord([FromBody] JsonElement element)
+    {
+        try
+        {
+            Dictionary<string, string> jsonObject = JsonConvert.DeserializeObject<Dictionary<string, string>>(element.ToString());
+            DateTime.TryParse(jsonObject["period"], out DateTime period);
+            int userId = HttpContext.GetUserIdInt();
+
+            return Ok(_timesheetControlBusiness.CreateTimesheetControlRecord(period, userId));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred creating a Timesheet Control");
+        }
+    }
+
+    [HttpPost("TimesheetControl")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult GetTimesheetControlRequests([FromBody] JsonElement element)
+    {
+        try
+        {
+            var paramsObj = JsonConvert.DeserializeObject<Dictionary<string, string>>(element.ToString());
+            DateTime.TryParse(paramsObj["startDate"], out DateTime startDate);
+            DateTime.TryParse(paramsObj["endDate"], out DateTime endDate);
+
+            return Ok(_timesheetControlBusiness.GetTimesheetControlRequests(startDate, endDate));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred fetching timesheetcontrol records");
         }
 
-        [HttpGet]
-        public IActionResult GetTimesheetControl()
+    }
+
+    [HttpPut("timesheetcontrol/approve")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult ApproveTimesheetsRequests([FromBody] int[] ids)
+    {
+        try
         {
-            try
-            {
-                
-                return Ok(_timesheetControlBusiness.GetTimesheetControl());
-                
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting Timesheet Control");
-            }
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_timesheetControlBusiness.ApproveTimesheetsRequests(ids, loggedUserId, loggedUserName));
         }
-
-        [HttpGet("{period}")]
-        public IActionResult GetTimesheetControlRecord([FromRoute] string period)
+        catch (System.Exception ex)
         {
-            try
-            {
-                int userId = 579;
-                DateTime.TryParse(period, out DateTime datePeriod);
-                return Ok(_timesheetControlBusiness.GetTimesheetControlRecord(datePeriod, userId));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting Timesheet Control record");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred approving timesheets records");
         }
+    }
 
-        [HttpPut]
-        public IActionResult UpdateApprovalStatus([FromBody]int[] timesheetIds)
+    [HttpPut("timesheetcontrol/reopen")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult ReopenTimesheetsRequests([FromBody] int[] ids)
+    {
+        try
         {
-            try
-            {
-                return Ok(_timesheetControlBusiness.UpdateApprovalStatus(timesheetIds));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred updating Timesheet Control");
-            }
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_timesheetControlBusiness.ReopenTimesheetsRequests(ids, loggedUserId, loggedUserName));
         }
-
-        [HttpPost]
-        public IActionResult CreateTimesheetControlRecord([FromBody] JsonElement element)
+        catch (System.Exception ex)
         {
-            try
-            {
-                // Todo this value will be replaced by principal info after get JWT token
-                int userId = 579;
-                Dictionary<string, string> jsonObject = JsonConvert.DeserializeObject<Dictionary<string, string>>(element.ToString());
-                DateTime.TryParse(jsonObject["period"], out DateTime period);
-
-                return Ok(_timesheetControlBusiness.CreateTimesheetControlRecord(period, userId));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred creating a Timesheet Control");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred reopening timesheets records");
         }
+    }
 
-        [HttpPost("TimesheetControl")]
-        public IActionResult GetTimesheetControlRequests([FromBody] JsonElement element)
+    [HttpPost("timesheetcontrol/delete")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult DeleteTimesheetsRequests([FromBody] int[] ids)
+    {
+        try
         {
-            try
-            {
-                int userId = 0;
-                var paramsObj = JsonConvert.DeserializeObject<Dictionary<string, string>>(element.ToString());
-                DateTime.TryParse(paramsObj["startDate"], out DateTime startDate);
-                DateTime.TryParse(paramsObj["endDate"], out DateTime endDate);
-                bool.TryParse(paramsObj["isSupervisor"], out bool isSupervisor);
-                //if (isSupervisor)
-                //{
-                //    userId = 561; // Get from token
-                //}
-                return Ok(_timesheetControlBusiness.GetTimesheetControlRequests(startDate, endDate, userId));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred fetching timesheetcontrol records");
-            }
-
+            return Ok(_timesheetControlBusiness.DeleteTimesheetsRequests(ids));
         }
-
-        [HttpPut("timesheetcontrol/approve")]
-        public IActionResult ApproveTimesheetsRequests([FromBody] int[] ids)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_timesheetControlBusiness.ApproveTimesheetsRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred approving timesheets records");
-            }
-        }
-
-        [HttpPut("timesheetcontrol/reopen")]
-        public IActionResult ReopenTimesheetsRequests([FromBody] int[] ids)
-        {
-            try
-            {
-                return Ok(_timesheetControlBusiness.ReopenTimesheetsRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred reopening timesheets records");
-            }
-        }
-
-        [HttpPost("timesheetcontrol/delete")]
-        public IActionResult DeleteTimesheetsRequests([FromBody] int[] ids)
-        {
-            try
-            {
-                return Ok(_timesheetControlBusiness.DeleteTimesheetsRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred deleting timesheets records");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred deleting timesheets records");
         }
     }
 }

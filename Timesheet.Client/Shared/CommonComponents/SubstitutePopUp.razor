@@ -1,0 +1,129 @@
+﻿@inject IUserDataService userService
+@inject IComponentComunicationService notificationSrv
+@inject ILocalStorageService localStorageSrv
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navManager
+
+
+<style>
+    .colorbutton {
+        background-color: #ff5c1a;
+        width: 120px;
+    }
+
+    .colorcancel {
+        background-color: whitesmoke;
+        color: #000000;
+    }
+
+    .top-right {
+        float: right;
+    }
+
+    .form-buttons {
+        display: flex;
+        justify-content: flex-start !important; /* Change from flex-end to flex-start */
+        width: 100%;
+        margin-top: 100px; /* Adds 40px margin on top to create space */
+    }
+</style>
+
+@if (!_contentLoaded)
+{
+    <TelerikLoaderContainer Text="Loading Substitute List..." />
+}
+else
+{
+    <img src="images/HDI.png" alt="logo HDI" class="top-right" style="width:80px" />
+    <br />
+    <br />
+    <h3>Substitute for a User</h3>
+    <br />
+
+    <TelerikForm Model="@_userSubstitutes">
+        <FormValidation>
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+        </FormValidation>
+        <FormItems>
+            <FormItem Field="SubstituteUser">
+                <Template>
+                    <TelerikComboBox Data="@_userSubstitutes"
+                                     TextField="SubstituteName"
+                                     ValueField="SubstituteId"
+                                     Value="@selectedUserId"
+                                     ValueExpression="@(() => selectedUserId)"
+                                     Placeholder="Select a user"
+                                     ClearButton="true"
+                                     TItem="Substitute"
+                                     TValue="int">
+                    </TelerikComboBox>
+                </Template>
+            </FormItem>
+        </FormItems>
+
+        <FormButtons>
+            <div class="form-buttons">
+                <TelerikButton Icon="@nameof(FontIcon.Save)" Class="colorbutton" Enabled="@IsButtonEnabled" OnClick="@DisableButton">Substitute</TelerikButton>
+                <div style="width: 20px;"></div> 
+                <TelerikButton Icon="@nameof(FontIcon.Cancel)" ButtonType="@ButtonType.Button" Class="colorcancel" OnClick="@ClosingPopup">Cancel</TelerikButton>
+            </div>
+
+        </FormButtons>
+    </TelerikForm>
+
+}
+@code {
+    [Parameter]
+    public bool IsPopup { get; set; }
+    [Parameter]
+    public EventCallback ClosePopup { get; set; }
+    public bool IsButtonEnabled { get; set; } = true;
+
+    public List<Timesheet.Client.Models.User> _users = null;
+    private List<Substitute> _userSubstitutes = null;
+
+    private bool _contentLoaded = false;
+    private string _tempUsers;
+    private string _tempUserSubs;
+    private int selectedUserId;
+
+    //***Get the user id from generated session ID*******
+    private int _userIdnew = 579;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetSubstituteList();
+        _contentLoaded = true;
+    }
+
+    private async Task GetSubstituteList()
+    {
+        var response = await userService.GetSubstitutesByEmp(_userIdnew);
+        if (response.Status == ResponseStatus.Success)
+        {
+            _userSubstitutes = response.Data.Select(kvp => new Substitute { SubstituteId = kvp.Key, SubstituteName = kvp.Value }).ToList();
+        }
+        else
+        {
+            _userSubstitutes = new List<Substitute>();
+        }
+
+        SetTempSubstitutes();
+    }
+
+    private void SetTempSubstitutes()
+    {
+        _tempUserSubs = JsonConvert.SerializeObject(_userSubstitutes);
+    }
+
+    public async Task ClosingPopup()
+    {
+        await ClosePopup.InvokeAsync();
+    }
+
+    private void DisableButton()
+    {
+        IsButtonEnabled = false;
+    }
+
+}

@@ -3,78 +3,65 @@ using Timesheet.Api.Business.Interfaces;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 
-namespace Timesheet.Api.Business.Implementations
+namespace Timesheet.Api.Business.Implementations;
+
+public class ClientBusiness : IClientBusiness
 {
-    public class ClientBusiness : IClientBusiness
+    private readonly IClientRepository _clientRepository;
+    private readonly IProjectRepository _projectRepository;
+
+    public ClientBusiness(IClientRepository clientRepository, IProjectRepository projectRepository)
     {
-        private readonly IClientRepository _clientRepository;
-        private readonly IProjectRepository _projectRepository;
+        _clientRepository = clientRepository;
+        _projectRepository = projectRepository;
+    }
 
-        public ClientBusiness(IClientRepository clientRepository, IProjectRepository projectRepository)
+    public IEnumerable<ClientDto> GetClients(bool? disabled) => _clientRepository.GetClients(disabled);
+
+    public IEnumerable<ClientLightDto> GetClientsForDropDown() => _clientRepository.GetClientsForDropDown();
+
+    public ClientDto GetClientById(int clientId) => _clientRepository.GetClientById(clientId);
+
+    public bool CreateClient(ClientDto client)
+    {
+        client.Disabled = false;
+        return _clientRepository.CreateClient(client);
+    }
+
+    public bool UpdateClient(ClientDto client) => _clientRepository.UpdateClient(client);
+
+    public bool DeleteClient(int clientId)
+    {
+        // Validate if the client exists
+        ClientDto client = _clientRepository.GetClientById(clientId);
+        if (client is null)
         {
-            _clientRepository = clientRepository;
-            _projectRepository = projectRepository;
+            return false;
         }
 
-        public IEnumerable<ClientDto> GetClients(bool? disabled)
+        // Validate if the client is used in any project
+        bool isUsedClient = _projectRepository.ValidateProjectsByClientId(clientId);
+        if (isUsedClient)
         {
-            return _clientRepository.GetClients(disabled);
+            return false;
         }
 
-        public IEnumerable<ClientLightDto> GetClientsForDropDown()
+        bool result;
+        try
         {
-            return _clientRepository.GetClientsForDropDown();
+            result = _clientRepository.DeleteClient(client);
         }
 
-        public ClientDto GetClientById(int clientId)
+        catch (System.Exception ex)
         {
-            return _clientRepository.GetClientById(clientId);
-        }
-
-        public bool CreateClient(ClientDto client)
-        {
-            client.Disabled = false;
-            return _clientRepository.CreateClient(client);
-        }
-
-        public bool UpdateClient(ClientDto client)
-        {
-            return _clientRepository.UpdateClient(client);
-        }
-
-        public bool DeleteClient(int clientId)
-        {
-            // Validate if the client exists
-            ClientDto client = _clientRepository.GetClientById(clientId);
-            if (client is null)
+            if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
             {
-                return false;
+                throw;
             }
 
-            // Validate if the client is used in any project
-            bool isUsedClient = _projectRepository.ValidateProjectsByClientId(clientId);
-            if (isUsedClient)
-            {
-                return false;
-            }
-
-            bool result;
-            try
-            {
-                result = _clientRepository.DeleteClient(client);
-            }
-
-            catch (System.Exception ex)
-            {
-                if (!ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE"))
-                {
-                    throw;
-                }
-
-                result = false;
-            }
-
-            return result;            
+            result = false;
         }
+
+        return result;            
     }
 }

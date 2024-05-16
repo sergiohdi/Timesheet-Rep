@@ -17,6 +17,7 @@ namespace Timesheet.Api.Models
         public decimal? Duration { get; set; }
         public string Comments { get; set; }
         public DateTime? Period { get; set; }
+        public int? TimesheetControlId { get; set; }
 
         public virtual ApprovalStatus ApprovalStatus { get; set; }
         public virtual TimeOff TimeOff { get; set; }

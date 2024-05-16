@@ -1,8 +1,7 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class ParentDepartmentDto
 {
-    public class ParentDepartmentDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-    }
+    public int Id { get; set; }
+    public string Name { get; set; }
 }

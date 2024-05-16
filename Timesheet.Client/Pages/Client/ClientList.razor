@@ -1,4 +1,5 @@
 ﻿@page "/clients"
+@attribute [Authorize(Roles = GlobalConstants.ADMIN_ROLE)]
 
 @inject IClientDataService clientSrv
 @inject IComponentComunicationService notificationSrv
@@ -11,7 +12,7 @@
 else
 {
     <h3>Clients</h3>
-
+    @* Todo: remove commented code *@
 @*    <div class="jumbotron filter">
         <div class="filter-cell">
 

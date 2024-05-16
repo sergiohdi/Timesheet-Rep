@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
 using Timesheet.Api.Models.DTOs;
 
-namespace Timesheet.Api.Repositories.Interfaces
+namespace Timesheet.Api.Repositories.Interfaces;
+
+public interface ITimeOffRepository
 {
-    public interface ITimeOffRepository
-    {
-        IEnumerable<TimeOffDto> GetTimeOffList();
-        TimeOffDto GetTimeOffById(int timeOffId);
-    }
+    IEnumerable<TimeOffDto> GetTimeOffList();
+    TimeOffDto GetTimeOffById(int timeOffId);
 }

@@ -1,8 +1,7 @@
-﻿namespace Timesheet.Client.Models
+﻿namespace Timesheet.Client.Models;
+
+public class TimesheetInput
 {
-    public class TimesheetInput
-    {
-        public string Id { get; set; }
-        public string Value { get; set; }
-    }
+    public string Id { get; set; }
+    public string Value { get; set; }
 }

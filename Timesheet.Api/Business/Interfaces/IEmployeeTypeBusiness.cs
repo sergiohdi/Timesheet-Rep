@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using Timesheet.Api.Models.DTOs;
 
-namespace Timesheet.Api.Business.Interfaces
+namespace Timesheet.Api.Business.Interfaces;
+
+public interface IEmployeeTypeBusiness
 {
-    public interface IEmployeeTypeBusiness
-    {
-        IEnumerable<EmployeeTypeDto> GetEmployeeTypes();
-    }
+    IEnumerable<EmployeeTypeDto> GetEmployeeTypes();
 }

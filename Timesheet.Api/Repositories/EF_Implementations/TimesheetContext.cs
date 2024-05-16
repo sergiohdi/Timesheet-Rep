@@ -781,6 +781,8 @@ namespace Timesheet.Api.Repositories.EF_Implementations
 
                 entity.Property(e => e.AccountExpiry).HasColumnType("datetime");
 
+                entity.Property(e => e.Attempts).HasDefaultValueSql("((0))");
+
                 entity.Property(e => e.CreatedDate).HasColumnType("datetime");
 
                 entity.Property(e => e.CreatedIp)

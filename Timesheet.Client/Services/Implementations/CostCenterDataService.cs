@@ -5,75 +5,74 @@ using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
 using Timesheet.Client.Utils;
 
-namespace Timesheet.Client.Services.Implementations
+namespace Timesheet.Client.Services.Implementations;
+
+public class CostCenterDataService : ICostCenterDataService
 {
-    public class CostCenterDataService : ICostCenterDataService
+    private readonly BaseDataService _baseService;
+
+    public CostCenterDataService(BaseDataService baseService)
     {
-        private readonly BaseDataService _baseService;
+        _baseService = baseService;
+    }
 
-        public CostCenterDataService(BaseDataService baseService)
+    public async Task<ApiResponse<IEnumerable<CostCenter>>> GetCostCenters(bool? disabled)
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList(Constants.costCenterEndpoint, $"?disabled={disabled}");
+        return new ApiResponse<IEnumerable<CostCenter>>
         {
-            _baseService = baseService;
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+                ? JsonConvert.DeserializeObject<List<CostCenter>>(data)
+                : new List<CostCenter>()
+        };
+    }
 
-        public async Task<ApiResponse<IEnumerable<CostCenter>>> GetCostCenters(bool? disabled)
+    public async Task<ApiResponse<CostCenter>> GetCostCenterById(int costCenterId)
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.GetById(Constants.costCenterEndpoint, costCenterId);
+        return new ApiResponse<CostCenter>
         {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList(Constants.costCenterEndpoint, $"?disabled={disabled}");
-            return new ApiResponse<IEnumerable<CostCenter>>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-                    ? JsonConvert.DeserializeObject<List<CostCenter>>(data)
-                    : new List<CostCenter>()
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+                ? JsonConvert.DeserializeObject<CostCenter>(data)
+                : new CostCenter()
+        };
+    }
 
-        public async Task<ApiResponse<CostCenter>> GetCostCenterById(int costCenterId)
+    public async Task<ApiResponse<bool>> CreateCostCenter(CostCenter costCenter)
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.Create(Constants.costCenterEndpoint, costCenter);
+        return new ApiResponse<bool>
         {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.GetById(Constants.costCenterEndpoint, costCenterId);
-            return new ApiResponse<CostCenter>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-                    ? JsonConvert.DeserializeObject<CostCenter>(data)
-                    : new CostCenter()
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success && JsonConvert.DeserializeObject<bool>(data)
+        };
+    }
 
-        public async Task<ApiResponse<bool>> CreateCostCenter(CostCenter costCenter)
+    public async Task<ApiResponse<bool>> UpdateCostCenter(CostCenter costCenter)
+    {
+        await _baseService.Update(Constants.costCenterEndpoint, costCenter);
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.Create(Constants.costCenterEndpoint, costCenter);
+        return new ApiResponse<bool>
         {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.Create(Constants.costCenterEndpoint, costCenter);
-            return new ApiResponse<bool>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success && JsonConvert.DeserializeObject<bool>(data)
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success && JsonConvert.DeserializeObject<bool>(data)
+        };
+    }
 
-        public async Task<ApiResponse<bool>> UpdateCostCenter(CostCenter costCenter)
+    public async Task<ApiResponse<bool>> DeleteCostCenter(int costCenterId)
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.Delete(Constants.costCenterEndpoint, costCenterId);
+        return new ApiResponse<bool>
         {
-            await _baseService.Update(Constants.costCenterEndpoint, costCenter);
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.Create(Constants.costCenterEndpoint, costCenter);
-            return new ApiResponse<bool>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success && JsonConvert.DeserializeObject<bool>(data)
-            };
-        }
-
-        public async Task<ApiResponse<bool>> DeleteCostCenter(int costCenterId)
-        {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.Delete(Constants.costCenterEndpoint, costCenterId);
-            return new ApiResponse<bool>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success && JsonConvert.DeserializeObject<bool>(data)
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success && JsonConvert.DeserializeObject<bool>(data)
+        };
     }
 }

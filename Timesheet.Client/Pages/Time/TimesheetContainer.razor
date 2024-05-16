@@ -1,8 +1,13 @@
 ﻿@page "/timesheet"
+@attribute [Authorize]
 
+@inject IClientDataService clientSrv
+@inject IUserDataService userSrv
 @inject ITimesheetService timesheetSrv
 @inject ITimesheetValidationsService timesheetValidationSrv
 @inject IApprovalDataService approvalSrv
+@inject IGeneralDataService generalSrv
+@inject IProjectDataService projectSrv
 @inject IComponentComunicationService comunicationSrv
 @inject NavigationManager navManager
 
@@ -10,227 +15,200 @@
 
 <div class="custom-container">
     <div class="controls">
-        <div class="control">
-            <label>Year</label>
-            <TelerikDropDownList Data="@_years"
-                                 @bind-Value="@_selectedYear"
-                                 TextField="Text"
-                                 ValueField="Value"
-                                 Size="@ThemeConstants.DropDownList.Size.Small"
-                                 Width="76%">
-            </TelerikDropDownList>
-        </div>
-        <div class="control">
-            <label>Month</label>
-            <TelerikDropDownList Data="@_months"
-                                 @bind-Value="@_selectedMonth"
-                                 TextField="Text"
-                                 ValueField="Value"
-                                 Size="@ThemeConstants.DropDownList.Size.Small"
-                                 Width="75%"
-                                 OnChange="@CalculateYears"
-                                 Id="months">
-            </TelerikDropDownList>
-        </div>
-        <div class="control">
-            <label>Period</label>
-            <TelerikDropDownList Data="@_periods"
-                                 @bind-Value="@_selectedPeriod"
-                                 TextField="Text"
-                                 ValueField="Value"
-                                 Size="@ThemeConstants.DropDownList.Size.Small"
-                                 Width="74%"
-                                 Id="period">
-            </TelerikDropDownList>
-        </div>
+        <SelectCalendar ShowLinks="true" OnReturnDates="SetDates" />
         <div>
             <button class="btn btn-info btn-sm custom-button" title="Search" @onclick="ChangePeriod">
                 View <i class="fas fa-search"></i>
             </button>
         </div>
     </div>
-    <div class="grid-actions">
-        <div style="font-size: 15px;">
-            <b> @_periodLabel </b>
-        </div>
-        <div>
-            <button class="btn
-                           btn-sm
-                           status-button
-                           @(SetCSSStatus())">
-                @_statusStr
-            </button>
-        </div>
-        <div>
-            <button class="btn btn-primary btn-sm" title="Send to approve" @onclick=CreateRegularTimeRequest > Submit for approval </button>
-            <button class="btn btn-info btn-sm custom-button" @onclick=AddNewRegularRecord>Add Regular Time</button>
-            <button class="btn btn-info btn-sm custom-button" @onclick=OpenTimeOffPopUp>Add Time Off</button>
-        </div>
-    </div>
-    @if (timesheetErrors.Any())
+
+    @if (!_contentLoaded)
     {
-        <div style="color: red; margin-top: 10px;">
-            <ul>
-                @foreach (string error in timesheetErrors)
-                {
-                    <li>@error</li>
-                }
-            </ul>
-        </div>    
+        <TelerikLoaderContainer Text="Loading Timesheet..." />
     }
-    
-    @if (timesheetSrv.TimesheetControl != null)
+    else
     {
+        <div class="grid-actions">
+            <div>
+                <StatusButton StatusName="@_statusStr" />
+            </div>
+            @if (timesheetSrv.TimesheetControl?.ApprovalStatusId == (int)ApprovalStatusOption.NotSubmitted)
+            {
+                <div>
+                    <button class="btn btn-primary btn-sm" title="Send to approve" @onclick=CreateRegularTimeRequest> Submit for approval </button>
+                    <button class="btn btn-info btn-sm custom-button" @onclick=AddNewRegularTimeRecord>Add Regular Time</button>
+                    <button class="btn btn-info btn-sm custom-button" @onclick=OpenTimeOffPopUp>Add Time Off</button>
+                </div>
+            }
+        </div>
+
+        @if (timesheetErrors.Any())
+        {
+            <div style="color: red; margin-top: 10px;">
+                <ul>
+                    @foreach (string error in timesheetErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+
         <div class="grid-container">
-            <TimeGrid Year="_selectedYear"
-                      Month="_selectedMonth"
-                      Period="_selectedPeriod"
-                      UserId="_userId"
-                      @ref="timesheet">
-            </TimeGrid>
+            <RegularTime Days="_days"
+                         BillingStatusList="_billingStatus"
+                         ProjectList="_projects"
+                         ClientList="_clients"
+                         UserActivities="_userActivities"
+                         LocationList="_locations"
+                         OnRegularTimeCreated="OnRegularTimeAdded" />
+            <TimeoffTime Days="_days"
+                         TimeOffRecords="_timeOffRecords"
+                         OnTimeOffAction="GetTimeoffData" />
+            <TotalTimeGrid />
+        </div>
+
+
+        <div style="margin-top: 15px;">
+            @if (timesheetSrv.TimeEntryDetails is not null)
+            {
+                <RegularEntryDetails GridData="timesheetSrv.TimeEntryDetails" />
+            }
+        </div>
+
+        <div style="margin-top: 15px;">
+            @if (timesheetSrv.ApprovalsHistory is not null)
+            {
+                <ApprovalHistoryGrid GridData="timesheetSrv.ApprovalsHistory.Where(x => x.TimesheetType == (int)ApprovalType.RegularTime).ToList()" />
+            }
         </div>
     }
-
-    <div style="margin-top: 15px;">
-        @if (timesheetSrv.TimeEntryDetails is not null)
-        {
-            <RegularEntryDetails GridData="timesheetSrv.TimeEntryDetails" />
-        }
-    </div>
-
-    <div style="margin-top: 15px;">
-        @if (timesheetSrv.ApprovalsHistory is not null)
-        {
-            <ApprovalHistoryGrid GridData="timesheetSrv.ApprovalsHistory.Where(x => x.TimesheetType == (int)ApprovalType.RegularTime && x.ApprovalId is null).ToList()" />
-        }
-    </div>
 </div>
 
 @code {
-    private List<ListType> _months;
-    private List<ListType> _years;
-    private List<ListType> _periods;
-    private int? _selectedYear = DateTime.Now.Year;
-    private int? _selectedMonth = DateTime.Now.Month;
-    private int? _selectedPeriod = DateTime.Now.Day > 15 ? 2 : 1;
-    private TimeGrid timesheet;
-    private string _periodLabel;
+    private int _selectedYear = DateTime.Now.Year;
+    private int _selectedMonth = DateTime.Now.Month;
+    private int _selectedPeriod = DateTime.Now.Day > 15 ? 2 : 1;
     private TimesheetControl timesheetControl;
     private string _statusStr = "Not Submited";
     private IEnumerable<string> timesheetErrors = Enumerable.Empty<string>();
+    private List<ClientLight> _clients = new List<ClientLight>
+    {
+        new ClientLight { Id = 0, Name = "Select a client"}
+    };
+    private List<General> _locations = null;
+    private List<UserActivityCodeLight> _userActivities = new List<UserActivityCodeLight>
+    {
+        new UserActivityCodeLight { ActivityId = 0, ActivityName = "Select an activty"}
+    };
+    private List<General> _billingStatus = null;
+    private List<ProjectLight> _projects = new List<ProjectLight>
+    {
+        new ProjectLight { ClientId = 0, Id = 0, Name = "Select a project" }
+    };
+    private IEnumerable<TimeoffApproval> _timeOffRecords = Enumerable.Empty<TimeoffApproval>();
+    private List<(int day, bool isWeekendDay)> _days = new List<(int day, bool isWeekendDay)>();
+    private bool _contentLoaded = false;
 
     // Temp Variables
     // Replace this user id value for user id token claim
-    private int _userId = 579;
+    private int _userId = 0;
 
     protected async override Task OnInitializedAsync()
     {
-        comunicationSrv.RefreshTimesheet += RefreshTimesheet;
         comunicationSrv.SendChangeWidth(true);
-        SetPeriodParameters();
-        SetDropDownValues();
-        SetPeriodDates();
+        GetPeriodParametersFromUrl();
         await GetTimesheetControlRecord();
-        if (timesheetSrv.TimesheetControl is null)
-        {
-            await CreateTimesheetControl();
-        }
+
+        DateTime startPeriod = GetPeriod();
+        timesheetSrv.SetStartAndEndPeriod(startPeriod);
+
+        await GetInitialData();
+
+        CalculatePeriodDays();
+        await GetTimesheetData();
+
+        SetStringStatus();
+        RefreshTimesheet();
     }
 
     public void Dispose()
     {
-        comunicationSrv.RefreshTimesheet -= RefreshTimesheet;
+        timesheetSrv.ReleaseData();
         comunicationSrv.SendChangeWidth(false);
+    }
+
+    private async Task GetInitialData()
+    {
+        var tasks = new List<Task>
+        {
+            clientSrv.GetClientsForDropDown().ContinueWith(task => _clients.AddRange(task.Result.Data)),
+            userSrv.GetActivitiesByUserForDropDown(_userId).ContinueWith(task => _userActivities.AddRange(task.Result.Data)),
+            generalSrv.GetGeneralValues("Location").ContinueWith(task => _locations = task.Result.Data.ToList()),
+            projectSrv.GetProjectsForDropDown().ContinueWith(task => _projects.AddRange(task.Result.Data)),
+            generalSrv.GetGeneralValues("BillingStatus").ContinueWith(task =>
+            {
+                _billingStatus = task.Result.Data.Where(x => !x.Value.Equals("Billable & Non-Billable")).ToList();
+            }),
+            GetTimeOffRecords(),
+            GetApprovalsHistory()
+        };
+        await Task.WhenAll(tasks);
     }
 
     private async Task GetTimesheetControlRecord()
     {
-        DateTime period = DateFunctions.GetPeriod(_selectedYear.Value, _selectedMonth.Value, _selectedPeriod.Value);
+        DateTime period = DateFunctions.GetPeriod(_selectedYear, _selectedMonth, _selectedPeriod);
         await timesheetSrv.GetTimesheetControlRecord(period);
-    }
-
-    private async Task CreateTimesheetControl()
-    {
-        DateTime period = GetPeriod();
-        await timesheetSrv.CreateTimesheetControl(period);
-    }
-
-    private void SetDropDownValues()
-    {
-        DateTime currentDate = DateTime.Now;
-
-        _months = new List<ListType>
+        if (timesheetSrv.TimesheetControl is null)
         {
-            new ListType { Value = null, Text = "Select..." },
-            new ListType { Value = 1, Text = "January" },
-            new ListType { Value = 2, Text = "February" },
-            new ListType { Value = 3, Text = "March" },
-            new ListType { Value = 4, Text = "April" },
-            new ListType { Value = 5, Text = "May" },
-            new ListType { Value = 6, Text = "June" },
-            new ListType { Value = 7, Text = "July" },
-            new ListType { Value = 8, Text = "August" },
-            new ListType { Value = 9, Text = "September" },
-            new ListType { Value = 10, Text = "October" },
-            new ListType { Value = 11, Text = "November" },
-            new ListType { Value = 12, Text = "December" }
-        };
-
-        int initialYear = (currentDate.Year - 10);
-        _years = new List<ListType>
-        {
-            new ListType { Value = null, Text = "Select..." },
-        };
-        for (int i = 1; i <= 10; i++)
-        {
-            int nextYear = initialYear + i;
-            _years.Add(new ListType { Value = nextYear, Text = nextYear.ToString() });
+            await timesheetSrv.CreateTimesheetControl(period);
         }
-
-        _periods = new List<ListType>
-        {
-            new ListType { Value = null, Text = "Select..." },
-            new ListType { Value = 1, Text = "1" },
-            new ListType { Value = 2, Text = "2" }
-        };
     }
 
-    private void CalculateYears(object value)
+    private async Task OnRegularTimeAdded()
     {
-        int futureYear = (DateTime.Now.Year + 1);
-        ListType nextYear = new ListType { Value = futureYear, Text = futureYear.ToString() };
-        _years = _years.Where(x => x.Value != futureYear).ToList();
+        await GetTimesheetData();
+        comunicationSrv.SendRefreshTimesheetAction();
+    }
 
-        if ((int)value == 1)
-        {
-            _years.Add(nextYear);
-        }
+    private async Task GetTimesheetData()
+    {
+        await timesheetSrv.GetTimesheetRecords(
+            _userId,
+            _selectedYear,
+            _selectedMonth,
+            _selectedPeriod
+        );
+
+        CalculateTimesheetHours();
     }
 
     private async Task ChangePeriod()
     {
-        SetPeriodDates();
-        await timesheet.CalculateNewPeriod();
+        _contentLoaded = false;
+        timesheetErrors = Enumerable.Empty<string>();
+        DateTime startPeriod = GetPeriod();
+        timesheetSrv.SetStartAndEndPeriod(startPeriod);
+        CalculatePeriodDays();
+        await GetTimesheetControlRecord();
+
+        var tasks = new List<Task>
+        {
+            GetTimeOffRecords(),
+            GetApprovalsHistory(),
+            GetTimesheetData()
+        };
+        await Task.WhenAll(tasks);
+
+        RefreshTimesheet();
     }
 
-    private void AddNewRegularRecord()
-    {
-        timesheet.AddNewRegularTimeRecord();
-    }
+    private void OpenTimeOffPopUp() => comunicationSrv.SendOpenPopUpAction();
 
-    private void OpenTimeOffPopUp()
-    {
-        comunicationSrv.SendOpenPopUpAction();
-    }
-
-    private void SetPeriodDates()
-    {
-        DateTime startDate = DateFunctions.GetPeriod(_selectedYear.Value, _selectedMonth.Value, _selectedPeriod.Value);
-        DateTime endDate = DateFunctions.GetPeriodLastDate(startDate);
-        _periodLabel = $"{startDate.ToString("MMM dd, yyyy")} - {endDate.ToString("MMM dd, yyyy")}";
-    }
-
-    private void SetPeriodParameters()
+    private void GetPeriodParametersFromUrl()
     {
         var uri = new Uri(navManager.Uri);
         var queryParameters = System.Web.HttpUtility.ParseQueryString(uri.Query);
@@ -247,27 +225,16 @@
         }
     }
 
-    private string SetCSSStatus()
-    {
-        switch (timesheetSrv.TimesheetControl?.ApprovalStatusId)
+    private void SetStringStatus() =>
+        _statusStr = timesheetSrv.TimesheetControl?.ApprovalStatusId switch
         {
-            case 0:
-                _statusStr = "Not Submited";
-                return "not-submited";
-            case 1:
-                _statusStr = "Pending";
-                return "pending";
-            case 2:
-                _statusStr = "Approved";
-                return "approved";
-            case 3:
-                _statusStr = "Rejected";
-                return "rejected";
-            default:
-                _statusStr = "Not Submited";
-                return "not-submited";
+            0 => "NotSubmitted",
+            1 => "Waiting",
+            2 => "Approved",
+            3 => "Rejected",
+            4 => "SupervisorApproval",
+            _ => "NotSubmitted"
         };
-    }
 
     private async void CreateRegularTimeRequest()
     {
@@ -276,13 +243,13 @@
         if (errors.Any())
         {
             comunicationSrv.SendNotification(new Notification
-            {
-                NotificationType = NotificationType.Error,
-                Message = errorMessage
-            });
+                {
+                    NotificationType = NotificationType.Error,
+                    Message = errorMessage
+                });
             Console.WriteLine($"errors: {JsonConvert.SerializeObject(errors)} ");
             timesheetErrors = errors;
-            return;   
+            return;
         }
 
         DateTime period = GetPeriod();
@@ -290,7 +257,8 @@
             {
                 StartDate = DateFunctions.GetPeriodStartDate(period),
                 EndDate = DateFunctions.GetPeriodLastDate(period),
-                Period = period
+                Period = period,
+                TimesheetControlId = timesheetSrv.TimesheetControl.TimesheetPeriodId
             });
 
         if (response.Data)
@@ -302,7 +270,9 @@
                     Message = "Regular time request created successfully."
                 });
 
-            StateHasChanged();
+            await GetTimesheetControlRecord();
+            comunicationSrv.SendRefreshTimesheetAction();
+            RefreshTimesheet();
         }
         else
         {
@@ -314,11 +284,118 @@
         }
     }
 
-    private DateTime GetPeriod() 
-        => DateFunctions.GetPeriod(_selectedYear.Value, _selectedMonth.Value, _selectedPeriod.Value);
+    private DateTime GetPeriod()
+        => DateFunctions.GetPeriod(_selectedYear, _selectedMonth, _selectedPeriod);
+
+    private void SetDates((DateTime startDate, DateTime endDate) dates)
+    {
+        _selectedYear = dates.startDate.Year;
+        _selectedMonth = dates.startDate.Month;
+        _selectedPeriod = dates.startDate.Day > 15 ? 2 : 1;
+    }
 
     private void RefreshTimesheet()
     {
-        StateHasChanged();   
+        SetStringStatus();
+        _contentLoaded = true;
+        StateHasChanged();
+    }
+
+    private void CalculatePeriodDays()
+    {
+        _days = new List<(int, bool)>();
+        int startDay = timesheetSrv.StartPeriod.Day;
+        int endDay = timesheetSrv.EndPeriod.Day;
+        for (int i = startDay; i <= endDay; i++)
+        {
+            _days.Add((i, IsDayOff(i)));
+        }
+    }
+
+    private void CalculateTimesheetHours()
+    {
+        timesheetSrv.TimesheetData.Where(x => !x.IsTimeOff).ToList().ForEach(record =>
+        {
+            var (option, disable) = TransformBillableOption(record.Billable, record.ProjectId.Value);
+            record.Billable = option;
+            record.EnableBillableDrop = disable;
+        });
+
+        CalculateHours();
+        CalculateHoursPerColumn();
+    }
+
+    private void CalculateHours() => timesheetSrv.TimesheetData.ForEach(record =>
+            record.TotalHoursPerRow = record.Entries.Sum(x => x.TotalHours).GetDecimalWithFormat(Constants.decimalFormat));
+
+    private void CalculateHoursPerColumn() => timesheetSrv.CalculateHoursPerColumn();
+
+    private async Task GetApprovalsHistory() => await timesheetSrv.GetApprovalsHistory();
+
+    private async Task GetTimeOffRecords() => _timeOffRecords = (await approvalSrv.GetTimeOffRecords(timesheetSrv.StartPeriod)).Data;
+
+    private bool IsDayOff(int day)
+    {
+        DayOfWeek weekDay = new DateOnly(timesheetSrv.StartPeriod.Year, timesheetSrv.StartPeriod.Month, day).DayOfWeek;
+        return weekDay == DayOfWeek.Saturday || weekDay == DayOfWeek.Sunday;
+    }
+
+    private (int?, bool) TransformBillableOption(int? billableOption, int projectId)
+    {
+        string projectBillingOption = _projects.FirstOrDefault(x => x.Id == projectId).TimeExpenseEntryType;
+        int billingOption = billableOption ?? (projectBillingOption.Equals("Non-Billable") ? 0 : 1);
+        bool enableBillingDrop = projectBillingOption.Equals("Billable & Non-Billable");
+        int option = billingOption == 1
+            ? _billingStatus.FirstOrDefault(x => x.Value.Equals("Billable Only")).GralId
+            : _billingStatus.FirstOrDefault(x => x.Value.Equals("Non-Billable")).GralId;
+
+        return (option, enableBillingDrop);
+    }
+
+    private void AddNewRegularTimeRecord()
+    {
+        CalculatePeriodDays();
+        List<TimesheetEntry> entries = new List<TimesheetEntry>();
+        for (int i = timesheetSrv.StartPeriod.Day; i <= timesheetSrv.EndPeriod.Day; i++)
+        {
+            entries.Add(new TimesheetEntry
+                {
+                    Day = i,
+                    EntryDate = new DateTime(timesheetSrv.StartPeriod.Year, timesheetSrv.StartPeriod.Month, i),
+                    TotalHours = 0,
+                    Comments = string.Empty
+                });
+        }
+
+        timesheetSrv.TimesheetData.Add(new TimesheetItem
+            {
+                Id = timesheetSrv.TimesheetData.Count + 1,
+                ClientId = 0,
+                ProjectId = 0,
+                ActivityId = 0,
+                TimeOffId = 0,
+                ApprovalStatus = 0,
+                Billable = _billingStatus.FirstOrDefault(x => x.Value.Equals("Billable Only")).GralId,
+                Location = "Office",
+                PONumber = string.Empty,
+                TotalHoursPerRow = ((decimal)0).GetDecimalWithFormat(Constants.decimalFormat),
+                IsNewRecord = true,
+                Entries = entries
+            });
+
+        StateHasChanged();
+    }
+
+    public async Task GetTimeoffData()
+    {
+        List<Task> tasks = new List<Task>
+        {
+            GetTimeOffRecords(),
+            GetTimesheetData()
+        };
+
+        await Task.WhenAll(tasks);
+
+        comunicationSrv.SendRefreshTimesheetAction();
     }
 }

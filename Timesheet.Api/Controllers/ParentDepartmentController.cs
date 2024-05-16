@@ -1,36 +1,36 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Timesheet.Api.Business.Implementations;
 using Timesheet.Api.Business.Interfaces;
-using Timesheet.Api.Models.DTOs;
+using Timesheet.Api.CustomFilters;
+using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/parentdepartment")]
+[AuthorizeRoles((int)UserRole.Admin)]
+public class ParentDepartmentController : ControllerBase
 {
-    [ApiController]
-    [Route("api/parentdepartment")]
-    public class ParentDepartmentController : ControllerBase
+    private readonly IParentDepartmentBusiness _parentdepartmentBusiness;
+    private readonly ILogger<ParentDepartmentController> _logger;
+
+    public ParentDepartmentController(IParentDepartmentBusiness parentdepartmentBusiness, ILogger<ParentDepartmentController> logger)
     {
-        private readonly IParentDepartmentBusiness _parentdepartmentBusiness;
-        private readonly ILogger<ParentDepartmentController> _logger;
+        _parentdepartmentBusiness = parentdepartmentBusiness;
+        _logger = logger;
+    }
 
-        public ParentDepartmentController(IParentDepartmentBusiness parentdepartmentBusiness, ILogger<ParentDepartmentController> logger)
+    [HttpGet]
+    public IActionResult GetParentDepartments()
+    {
+        try
         {
-            _parentdepartmentBusiness = parentdepartmentBusiness;
-            _logger = logger;
+            return Ok(_parentdepartmentBusiness.GetParentDepartments());
         }
-
-        [HttpGet]
-        public IActionResult GetParentDepartments()
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_parentdepartmentBusiness.GetParentDepartments());
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting parent departments");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting parent departments");
         }
     }
 }

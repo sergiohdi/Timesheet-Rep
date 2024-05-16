@@ -5,28 +5,27 @@ using Timesheet.Client.Models;
 using Timesheet.Client.Services.Interfaces;
 using Timesheet.Client.Utils;
 
-namespace Timesheet.Client.Services.Implementations
+namespace Timesheet.Client.Services.Implementations;
+
+public class TimesheetTypeDataService : ITimesheetTypeDataService
 {
-    public class TimesheetTypeDataService : ITimesheetTypeDataService
+    private readonly BaseDataService _baseService;
+
+    public TimesheetTypeDataService(BaseDataService baseService)
     {
-        private readonly BaseDataService _baseService;
+        _baseService = baseService;
+    }
 
-        public TimesheetTypeDataService(BaseDataService baseService)
+    public async Task<ApiResponse<IEnumerable<TimesheetType>>> GetTimesheetTypes()
+    {
+        (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList("timesheettype");           
+        return new ApiResponse<IEnumerable<TimesheetType>>
         {
-            _baseService = baseService;
-        }
-
-        public async Task<ApiResponse<IEnumerable<TimesheetType>>> GetTimesheetTypes()
-        {
-            (ResponseStatus status, string data, List<string> errors) = await _baseService.GetList("timesheettype");           
-            return new ApiResponse<IEnumerable<TimesheetType>>
-            {
-                Status = status,
-                Errors = errors,
-                Data = status == ResponseStatus.Success
-                    ? JsonConvert.DeserializeObject<List<TimesheetType>>(data)
-                    : new List<TimesheetType>()
-            };
-        }
+            Status = status,
+            Errors = errors,
+            Data = status == ResponseStatus.Success
+                ? JsonConvert.DeserializeObject<List<TimesheetType>>(data)
+                : new List<TimesheetType>()
+        };
     }
 }

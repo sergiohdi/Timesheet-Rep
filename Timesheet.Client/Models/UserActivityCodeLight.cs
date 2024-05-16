@@ -1,9 +1,8 @@
-﻿namespace Timesheet.Client.Models
+﻿namespace Timesheet.Client.Models;
+
+public class UserActivityCodeLight
 {
-    public class UserActivityCodeLight
-    {
-        public int? ActivityId { get; set; }
-        public string ActivityName { get; set; }
-        public string ActivityCode { get; set; }
-    }
+    public int? ActivityId { get; set; }
+    public string ActivityName { get; set; }
+    public string ActivityCode { get; set; }
 }

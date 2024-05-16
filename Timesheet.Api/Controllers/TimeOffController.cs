@@ -2,33 +2,32 @@
 using Microsoft.Extensions.Logging;
 using Timesheet.Api.Business.Interfaces;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/timeoff")]
+public class TimeOffController : ControllerBase
 {
-    [ApiController]
-    [Route("api/timeoff")]
-    public class TimeOffController : ControllerBase
+    private readonly ITimeOffBusiness _timeOffBusiness;
+    private readonly ILogger<TimeOffController> _logger;
+
+    public TimeOffController(ITimeOffBusiness timeOffBusiness,  ILogger<TimeOffController> logger)
     {
-        private readonly ITimeOffBusiness _timeOffBusiness;
-        private readonly ILogger<TimeOffController> _logger;
+        _timeOffBusiness = timeOffBusiness;
+        _logger = logger;
+    }
 
-        public TimeOffController(ITimeOffBusiness timeOffBusiness,  ILogger<TimeOffController> logger)
+    [HttpGet]
+    public IActionResult GetTimeOffList()
+    {
+        try
         {
-            _timeOffBusiness = timeOffBusiness;
-            _logger = logger;
+            return Ok(_timeOffBusiness.GetTimeOffList());
         }
-
-        [HttpGet]
-        public IActionResult GetTimeOffList()
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_timeOffBusiness.GetTimeOffList());
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting time off list");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting time off list");
         }
     }
 }

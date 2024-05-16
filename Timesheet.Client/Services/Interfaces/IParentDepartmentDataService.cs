@@ -2,10 +2,9 @@
 using System.Threading.Tasks;
 using Timesheet.Client.Models;
 
-namespace Timesheet.Client.Services.Interfaces
+namespace Timesheet.Client.Services.Interfaces;
+
+public interface IParentDepartmentDataService
 {
-    public interface IParentDepartmentDataService
-    {
-        Task<ApiResponse<IEnumerable<ParentDepartment>>> GetParentDepartments();
-    }
+    Task<ApiResponse<IEnumerable<ParentDepartment>>> GetParentDepartments();
 }

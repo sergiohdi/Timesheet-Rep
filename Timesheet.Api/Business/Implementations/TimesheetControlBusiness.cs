@@ -6,180 +6,195 @@ using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Business.Implementations
+namespace Timesheet.Api.Business.Implementations;
+
+public class TimesheetControlBusiness : BaseBusiness, ITimesheetControlBusiness
 {
-    public class TimesheetControlBusiness : ITimesheetControlBusiness
+    private readonly ITimesheetControlRepository _timesheetControlRepository;
+    private readonly IApprovalRepository _approvalRepository;
+    private readonly ITimesheetDataRepository _timesheetDataRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IApprovalHistoryRepository _approvalHistoryRepository;
+
+    public TimesheetControlBusiness(
+        ITimesheetControlRepository timesheetControlRepository,
+        IApprovalRepository approvalRepository,
+        ITimesheetDataRepository timesheetDataRepository,
+        IUserRepository userRepository,
+        IApprovalHistoryRepository approvalHistoryRepository
+    ) : base(approvalHistoryRepository)
     {
-        private readonly ITimesheetControlRepository _timesheetControlRepository;
-        private readonly IApprovalRepository _approvalRepository;
-        private readonly ITimesheetDataRepository _timesheetDataRepository;
-        private readonly IUserRepository _userRepository;
+        _timesheetControlRepository = timesheetControlRepository;
+        _approvalRepository = approvalRepository;
+        _timesheetDataRepository = timesheetDataRepository;
+        _userRepository = userRepository;
+        _approvalHistoryRepository = approvalHistoryRepository;
+    }
 
-        public TimesheetControlBusiness(
-            ITimesheetControlRepository timesheetControlRepository,
-            IApprovalRepository approvalRepository,
-            ITimesheetDataRepository timesheetDataRepository,
-            IUserRepository userRepository
-        )
+    public IEnumerable<TimesheetControlDto> GetTimesheetControl() => _timesheetControlRepository.GetTimesheetControl();
+
+    public TimesheetControlDto GetTimesheetControlRecord(DateTime period, int userId) => _timesheetControlRepository.GetTimesheetControlRecord(period, userId);
+
+    // Todo: check if we still need this method
+    public bool UpdateApprovalStatus(int[] ids)
+    {
+        //IEnumerable<TimesheetControlDto> records = _timesheetControlRepository.GetTimesheetControlById(ids);
+
+        //// Update timesheetcontrol table
+        //_timesheetControlRepository.UpdateApprovalStatus(ids);
+
+        //List<int> userIds = records.Select(x => x.UserId).Distinct().ToList();
+        //List<DateTime> periods = records.Select(x => x.TimesheetPeriod).Distinct().ToList();
+
+        //// Update approvals table
+        //_approvalRepository.UpdateApprovalStatus(periods, userIds);
+
+        //// Update timesheet table
+        //_timesheetDataRepository.UpdateApprovedRecords(periods, userIds);
+
+        return true;
+    }
+
+    public TimesheetControlDto CreateTimesheetControlRecord(DateTime period, int userId)
+    {
+        UserDto existingUser = _userRepository.GetUser(userId);
+        if (existingUser == null)
         {
-            _timesheetControlRepository = timesheetControlRepository;
-            _approvalRepository = approvalRepository;
-            _timesheetDataRepository = timesheetDataRepository;
-            _userRepository = userRepository;
+            return null;
         }
 
-        public IEnumerable<TimesheetControlDto> GetTimesheetControl()
+        TimesheetControlDto response = _timesheetControlRepository.GetTimesheetControlByPeriodAndUserId(period, userId);
+        if (response != null)
         {
-            return _timesheetControlRepository.GetTimesheetControl();
+            return response;
         }
 
-        public TimesheetControlDto GetTimesheetControlRecord(DateTime period, int userId)
+        return _timesheetControlRepository.CreateTimesheetControlRecord(new TimesheetControlDto
         {
-            return _timesheetControlRepository.GetTimesheetControlRecord(period, userId);
+            TimesheetPeriod = period,
+            UserId = userId,
+            StartDate = period,
+            EndDate = DateFunctions.GetPeriodLastDate(period),
+            ApprovalStatusId = (int)ApprovalStatusOption.NotSubmitted,
+            UserTemplateId = existingUser.TimesheetTemplate ?? Utils.Constants.EIGHHOURSSHIFT // This line is temporary
+        });
+    }
+
+    public IEnumerable<TimesheetControlApprovalDto> GetTimesheetControlRequests(DateTime startDate, DateTime endDate) =>
+        _timesheetControlRepository.GetTimesheetControlRequests(startDate, endDate);
+
+    public bool ApproveTimesheetsRequests(int[] ids, int loggedUserId, string loggedUserName)
+    {
+        int status = (int)ApprovalStatusOption.Approved;
+
+        // get timesheets control requests
+        var timesheetsRequests = _timesheetControlRepository.GetTimesheetsApprovalRecords(ids);
+
+        // update timesheets control requests
+        bool response = _timesheetControlRepository.ProcessTimesheetsRequests(ids, status);
+
+        // update approvals if there are any
+        int[] userIds = timesheetsRequests.Select(x => x.UserId).Distinct().ToArray();
+        int[] timesheetControlIds = timesheetsRequests.Select(x => x.TimesheetPeriodId).Distinct().ToArray();
+        var approvals = _approvalRepository.GetRegularTimeApprovals(userIds, timesheetControlIds);
+        if (approvals.Any())
+        {
+            _approvalRepository.ProcessRequests(
+                approvals.Select(x => x.ApprovalId).ToArray(),
+                status);
         }
 
-        public bool UpdateApprovalStatus(int[] ids)
+        // update timesheet records
+        foreach (var item in timesheetsRequests)
         {
-            //IEnumerable<TimesheetControlDto> records = _timesheetControlRepository.GetTimesheetControlById(ids);
-
-            //// Update timesheetcontrol table
-            //_timesheetControlRepository.UpdateApprovalStatus(ids);
-
-            //List<int> userIds = records.Select(x => x.UserId).Distinct().ToList();
-            //List<DateTime> periods = records.Select(x => x.TimesheetPeriod).Distinct().ToList();
-
-            //// Update approvals table
-            //_approvalRepository.UpdateApprovalStatus(periods, userIds);
-
-            //// Update timesheet table
-            //_timesheetDataRepository.UpdateApprovedRecords(periods, userIds);
-
-            return true;
+            _timesheetDataRepository.UpdateRegularRecords(
+            item.UserId,
+            item.TimesheetPeriod.Date,
+            status);
         }
 
-        public TimesheetControlDto CreateTimesheetControlRecord(DateTime period, int userId)
+        // Create an approval history record per request
+        foreach (var item in approvals)
         {
-            UserDto existingUser = _userRepository.GetUser(userId);
-            if (existingUser == null) 
-            {
-                return null;
-            }
-
-            TimesheetControlDto response = _timesheetControlRepository.GetTimesheetControlByPeriodAndUserId(period, userId);
-            if (response != null)
-            {
-                return response;
-            }
-
-            return _timesheetControlRepository.CreateTimesheetControlRecord(new TimesheetControlDto
-            {
-                TimesheetPeriod = period,
-                UserId = userId,
-                StartDate = period,
-                EndDate = DateFunctions.GetPeriodLastDate(period),
-                ApprovalStatusId = (int)ApprovalStatusOption.NotSubmitted,
-                UserTemplateId = existingUser.TimesheetTemplate ?? Utils.Constants.EIGHHOURSSHIFT // This line is temporary
-            });
+            CreateApprovalHistoryRecord(
+                status,
+                loggedUserId,
+                loggedUserName,
+                item.TimesheetControlId.Value,
+                item.ApprovalId,
+                ApprovalType.RegularTime
+            );
         }
 
-        public IEnumerable<TimesheetControlApprovalDto> GetTimesheetControlRequests(DateTime startDate, DateTime endDate, int userId = 0)
+        return true;
+    }
+
+    public bool ReopenTimesheetsRequests(int[] ids, int loggedUserId, string loggedUserName)
+    {
+        int status = (int)ApprovalStatusOption.NotSubmitted;
+
+        // get timesheets control requests
+        var timesheetsRequests = _timesheetControlRepository.GetTimesheetsApprovalRecords(ids);
+
+        // update timesheets control requests
+        bool response = _timesheetControlRepository.ProcessTimesheetsRequests(ids, status);
+
+        // update approvals if there are any
+        int[] userIds = timesheetsRequests.Select(x => x.UserId).Distinct().ToArray();
+        int[] timesheetControlIds = timesheetsRequests.Select(x => x.TimesheetPeriodId).Distinct().ToArray();
+        var approvals = _approvalRepository.GetRegularTimeApprovals(userIds, timesheetControlIds);
+        if (approvals.Any())
         {
-            return _timesheetControlRepository.GetTimesheetControlRequests(startDate, endDate, userId);
+            _approvalRepository.ProcessRequests(
+                approvals.Select(x => x.ApprovalId).ToArray(),
+                status);
         }
 
-        public bool ApproveTimesheetsRequests(int[] ids, bool isWTF = true)
+        // update timesheet records
+        foreach (var item in timesheetsRequests)
         {
-            // get timesheets control requests
-            var timesheetsRequests = _timesheetControlRepository.GetTimesheetsApprovalRecords(ids);
-
-            // update timesheets control requests
-            bool response = _timesheetControlRepository.ProcessTimesheetsRequests(ids, isWTF
-                ? (int)ApprovalStatusOption.Approved
-                : (int)ApprovalStatusOption.SupervisorApproval);
-
-
-            // Todo update approvals if there are any
-            foreach (var item in timesheetsRequests)
-            {
-                var approvals = _approvalRepository.GetRegularTimeApprovals(item.UserId, item.TimesheetPeriod);
-                if (approvals.Any())
-                {
-                    _approvalRepository.ProcessRequests(approvals.Select(x => x.ApprovalId).ToArray(), isWTF
-                                                                      ? (int)ApprovalStatusOption.Approved
-                                                                      : (int)ApprovalStatusOption.SupervisorApproval);
-                }
-            }
-                
-            if (isWTF)
-            {
-                // update timesheet records
-                foreach (var item in timesheetsRequests)
-                {
-                            _timesheetDataRepository.UpdateRegularRecords(
-                            item.UserId,
-                            item.TimesheetPeriod.Date,
-                            (int)ApprovalStatusOption.Approved);                   
-                }
-            }
-
-            return true;
+            _timesheetDataRepository.UpdateRegularRecords(
+            item.UserId,
+            item.TimesheetPeriod.Date,
+            status);
         }
 
-        public bool ReopenTimesheetsRequests(int[] ids, bool isWTF = true)
+        // Create an approval history record per request
+        foreach (var item in approvals)
         {
-            // get timesheets control requests
-            var timesheetsRequests = _timesheetControlRepository.GetTimesheetsApprovalRecords(ids);
-
-            // update timesheets control requests
-            bool response = _timesheetControlRepository.ProcessTimesheetsRequests(ids,(int)ApprovalStatusOption.NotSubmitted);
-
-            // Todo update approvals if there are any
-            foreach (var item in timesheetsRequests)
-            {
-                var approvals = _approvalRepository.GetRegularTimeApprovals(item.UserId, item.TimesheetPeriod);
-                if (approvals.Any())
-                {
-                    _approvalRepository.ProcessRequests(approvals.Select(x => x.ApprovalId).ToArray(), (int)ApprovalStatusOption.NotSubmitted);                                                                      
-                }
-            }
-
-            if (isWTF)
-            {
-                // update timesheet records
-                foreach (var item in timesheetsRequests)
-                {
-                    _timesheetDataRepository.UpdateRegularRecords(
-                    item.UserId,
-                    item.TimesheetPeriod.Date,
-                    (int)ApprovalStatusOption.NotSubmitted);
-                }
-            }
-
-            return true;
+            CreateApprovalHistoryRecord(
+                status,
+                loggedUserId,
+                loggedUserName,
+                item.TimesheetControlId.Value,
+                item.ApprovalId,
+                ApprovalType.RegularTime
+            );
         }
 
-        public bool DeleteTimesheetsRequests(int[] ids)
-        {
-            //get timesheets control requests
-            var timesheetsRequests = _timesheetControlRepository.GetTimesheetsApprovalRecords(ids);
+        return true;
+    }
 
-            //delete timesheets control records
-            _timesheetControlRepository.DeleteTimesheetsApprovalRequests(ids);
+    public bool DeleteTimesheetsRequests(int[] ids)
+    {
+        //get timesheets control requests
+        var timesheetsRequests = _timesheetControlRepository.GetTimesheetsApprovalRecords(ids);
+        DateTime period = timesheetsRequests.First().TimesheetPeriod;
+        int[] userIds = timesheetsRequests.Select(x => x.UserId).Distinct().ToArray();
+        int[] timesheetControlIds = timesheetsRequests.Select(x => x.TimesheetPeriodId).Distinct().ToArray();
 
-            // delete timesheet rows
-            foreach (var item in timesheetsRequests)
-            {
-                _timesheetDataRepository.DeleteTimesheetOnlyRows(item.TimesheetPeriod, item.UserId); 
-            }
+        //delete timesheets control records
+        _timesheetControlRepository.ProcessTimesheetsRequests(ids, (int)ApprovalStatusOption.NotSubmitted);
 
-            // Delete approval records if there are any for the selected timesheets
-            
-            foreach (var item in timesheetsRequests)
-            {               
-                _approvalRepository.DeleteTimesheetRecordApproval(item.TimesheetPeriod, item.UserId);          
-            }
+        // delete timesheet rows, assuming all records are the same period
+        _timesheetDataRepository.DeleteTimesheetOnlyRegularTime(period, userIds);
 
-            return true;
-        }
+        // Delete approval records if there are any for the selected timesheets
+        _approvalRepository.DeleteTimesheetRecordApproval(period, userIds);
+
+        // Delete history approvals
+        _approvalHistoryRepository.DeleteRegularApprovalHistoryRecords(userIds, timesheetControlIds);
+
+        return true;
     }
 }

@@ -1,106 +1,132 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Timesheet.Api.Business.Implementations;
+using System.Collections.Generic;
 using Timesheet.Api.Business.Interfaces;
+using Timesheet.Api.CustomFilters;
 using Timesheet.Api.Models.DTOs;
+using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/department")]
+public class DepartmentController : ControllerBase
 {
-    [ApiController]
-    [Route("api/department")]
-    public class DepartmentController : ControllerBase
+    private readonly IDepartmentBusiness _departmentBusiness;
+    private readonly ILogger<DepartmentController> _logger;
+
+    public DepartmentController(IDepartmentBusiness departmentBusiness, ILogger<DepartmentController> logger)
     {
-        private readonly IDepartmentBusiness _departmentBusiness;
-        private readonly ILogger<DepartmentController> _logger;
+        _departmentBusiness = departmentBusiness;
+        _logger = logger;
+    }
 
-        public DepartmentController(IDepartmentBusiness departmentBusiness, ILogger<DepartmentController> logger)
+    [HttpGet]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(IEnumerable<DepartmentDto>), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult GetDepartments(bool? DisabledSetting)
+    {
+        try
         {
-            _departmentBusiness = departmentBusiness;
-            _logger = logger;
+            return Ok(_departmentBusiness.GetDepartments(DisabledSetting));
         }
-
-        [HttpGet]
-        public IActionResult GetDepartments(bool? DisabledSetting)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_departmentBusiness.GetDepartments(DisabledSetting));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting departments");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting departments");
         }
+    }
 
-        [HttpGet("{Id}")]
-        public IActionResult GetDepartmentById(int Id)
+    [HttpGet("{Id}")]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(DepartmentDto), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult GetDepartmentById(int Id)
+    {
+        try
         {
-            try
-            {
-                return Ok(_departmentBusiness.GetDepartmentById(Id));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred getting department");
-            }
+            return Ok(_departmentBusiness.GetDepartmentById(Id));
         }
-
-        [HttpPost]
-        public IActionResult CreateDepartment(DepartmentDto department)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_departmentBusiness.CreateDepartment(department));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred creating department");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred getting department");
         }
+    }
 
-        [HttpPut]
-        public IActionResult UpdateDepartment(DepartmentDto department)
+    [HttpPost]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(bool), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult CreateDepartment(DepartmentDto department)
+    {
+        try
         {
-            try
-            {
-                return Ok(_departmentBusiness.UpdateDepartment(department));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred updating department");
-            }
+            return Ok(_departmentBusiness.CreateDepartment(department));
         }
-
-        //[HttpDelete("{departmentId}")]
-        //public IActionResult ChangeActivityStatus(int departmentId)
-        //{
-        //    try
-        //    {
-        //        return Ok(_departmentBusiness.UpdateDepartmentState(departmentId));
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        _logger.LogError(ex.Message);
-        //        return StatusCode(500, "An error occurred deleting department");
-        //    }
-        //}
-
-        [HttpDelete("{Id}")]
-        public IActionResult DeleteDepartment(int Id)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_departmentBusiness.DeleteDepartment(Id));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error occurred deleting department");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred creating department");
+        }
+    }
+
+    [HttpPut]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(bool), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult UpdateDepartment(DepartmentDto department)
+    {
+        try
+        {
+            return Ok(_departmentBusiness.UpdateDepartment(department));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred updating department");
+        }
+    }
+
+    //[HttpDelete("{departmentId}")]
+    //public IActionResult ChangeActivityStatus(int departmentId)
+    //{
+    //    try
+    //    {
+    //        return Ok(_departmentBusiness.UpdateDepartmentState(departmentId));
+    //    }
+    //    catch (System.Exception ex)
+    //    {
+    //        _logger.LogError(ex.Message);
+    //        return StatusCode(500, "An error occurred deleting department");
+    //    }
+    //}
+
+    [HttpDelete("{Id}")]
+    [AuthorizeRoles((int)UserRole.Admin)]
+    [ProducesResponseType(typeof(bool), 200)]
+    [ProducesResponseType(typeof(void), 403)]
+    [ProducesResponseType(typeof(void), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public IActionResult DeleteDepartment(int Id)
+    {
+        try
+        {
+            return Ok(_departmentBusiness.DeleteDepartment(Id));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error occurred deleting department");
         }
     }
 }

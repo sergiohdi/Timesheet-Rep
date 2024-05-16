@@ -1,5 +1,7 @@
 ﻿@page "/payroll"
+@attribute [Authorize]
 
+@* Todo: move these styles to a new css file *@
 <style>
     .whitesmoke-tab {
         background-color: whitesmoke;
@@ -10,22 +12,22 @@
     }
 </style>
 
-    <h3>Payroll</h3>
+<h3>Payroll</h3>
 
-    <TelerikTabStrip>
-        <TabStripTab Title="Timesheets" Class="whitesmoke-tab">
-            <TimesheetsControlWTSComponent />
-        </TabStripTab>
-        <TabStripTab Title="Time Off" Class="whitesmoke-tab">
+<TelerikTabStrip>
+    <TabStripTab Title="Timesheets" Class="whitesmoke-tab">
+        <TimesheetsControlWTSComponent />
+    </TabStripTab>
+    <TabStripTab Title="Time Off" Class="whitesmoke-tab">
         <TimeoffComponent IsSupervisor="false" />
-        </TabStripTab>
-    </TelerikTabStrip>
+    </TabStripTab>
+</TelerikTabStrip>
 
 @code {
     [CascadingParameter]
     public DialogFactory Dialogs { get; set; }
     private bool _windowVisible = true;
-    
+
     private void OpenWindow()
     {
         _windowVisible = true;

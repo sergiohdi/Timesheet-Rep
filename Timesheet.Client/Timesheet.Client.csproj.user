@@ -5,5 +5,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <ActiveDebugProfile>Timesheet.Client</ActiveDebugProfile>
+    <NameOfLastUsedPublishProfile>C:\Gitlab\timesheetteam\Timesheet.Client\Properties\PublishProfiles\TimesheetHDI - Web Deploy.pubxml</NameOfLastUsedPublishProfile>
   </PropertyGroup>
 </Project>

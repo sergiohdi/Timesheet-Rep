@@ -1,20 +1,13 @@
 ﻿using System.Collections.Generic;
 using Timesheet.Api.Models.DTOs;
 
-namespace Timesheet.Api.Repositories.Interfaces
+namespace Timesheet.Api.Repositories.Interfaces;
+
+public interface IDepartmentRepository
 {
-    public interface IDepartmentRepository
-    {
-        IEnumerable<DepartmentDto> GetDepartments(bool? disabled);
-
-        DepartmentDto GetDepartmentById(int departmentId);
-
-        bool CreateDepartment(DepartmentDto department);
-
-        bool UpdateDepartment(DepartmentDto department);
-
-        //bool UpdateDepartmentState(DepartmentDto department);
-
-        bool DeleteDepartment(DepartmentDto department);
-    }
+    IEnumerable<DepartmentDto> GetDepartments(bool? disabled);
+    DepartmentDto GetDepartmentById(int departmentId);
+    bool CreateDepartment(DepartmentDto department);
+    bool UpdateDepartment(DepartmentDto department);
+    bool DeleteDepartment(DepartmentDto department);
 }

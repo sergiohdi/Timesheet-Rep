@@ -4,227 +4,267 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Timesheet.Api.Business.Interfaces;
+using Timesheet.Api.CustomFilters;
+using Timesheet.Api.Extensions;
 using Timesheet.Api.Models.DTOs;
+using Timesheet.Shared.Utils;
 
-namespace Timesheet.Api.Controllers
+namespace Timesheet.Api.Controllers;
+
+[ApiController]
+[Route("api/approval")]
+public class ApprovalController : ControllerBase
 {
-    [ApiController]
-    [Route("api/approval")]
-    public class ApprovalController : ControllerBase
+    private readonly IApprovalBusiness _approvalBusiness;
+    private readonly ILogger<ActivityController> _logger;
+
+    public ApprovalController(IApprovalBusiness approvalBusiness, ILogger<ActivityController> logger)
     {
-        private readonly IApprovalBusiness _approvalBusiness;
-        private readonly ILogger<ActivityController> _logger;
+        _approvalBusiness = approvalBusiness;
+        _logger = logger;
+    }
 
-        public ApprovalController(IApprovalBusiness approvalBusiness, ILogger<ActivityController> logger)
+    [HttpPost("createtimeoff")]
+    public IActionResult CreateTimeoffRequest([FromBody] ApprovalDto approvalDto) 
+    {
+        if (!ModelState.IsValid) 
         {
-            _approvalBusiness = approvalBusiness;
-            _logger = logger;
+            return BadRequest(ModelState);
         }
 
-        [HttpPost("createtimeoff")]
-        public IActionResult CreateTimeoffRequest([FromBody] ApprovalDto approvalDto) 
+        try
         {
-            if (!ModelState.IsValid) 
-            {
-                return BadRequest(ModelState);
-            }
+            int loggedUserId = HttpContext.GetUserIdInt();
+            approvalDto.UserId = loggedUserId;
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.CreateTimeoffRequest(approvalDto, loggedUserId, loggedUserName));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred saving time off request");
+        }
+    }
 
-            try
-            {
-
-                return Ok(_approvalBusiness.CreateTimeoffRequest(approvalDto));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred saving timeoff request");
-            }
+    [HttpPost("createregulartime")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult CreateRegularTimeRequest([FromBody] ApprovalDto approvalDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
         }
 
-        [HttpPost("createregulartime")]
-        public IActionResult CreateRegularTimeRequest([FromBody] ApprovalDto approvalDto)
+        try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.CreateRegularTimeRequest(approvalDto, loggedUserId, loggedUserName));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred saving regular time request");
+        }
+    }
 
-            try
-            {
-                const int userId = 579;
-                return Ok(_approvalBusiness.CreateRegularTimeRequest(approvalDto, userId));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred saving regular time request");
-            }
+    [HttpPost("timeoff/timesheet")]
+    public IActionResult GetTimeOffRecords([FromBody] JsonElement element)
+    {
+        try
+        {
+            var jsonObject = JsonConvert.DeserializeObject<Dictionary<string,string>>(element.ToString());
+            DateTime.TryParse(jsonObject["period"], out DateTime period);
+            Int32.TryParse(jsonObject["period"], out int userId);
+            userId = userId == 0 ? HttpContext.GetUserIdInt() : userId;
+
+            return Ok(_approvalBusiness.GetTimeOffRecords(period, userId));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred fetching time off records");
+        }
+    }
+
+    [HttpPut("timeoff/{timeoffId}")]
+    public IActionResult UpdateTimeoffRecord([FromRoute] int timeoffId, ApprovalDto approvalDto) 
+    {
+        try
+        {
+            int loggedUserId = HttpContext.GetUserIdInt();
+            approvalDto.UserId = loggedUserId;
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.UpdateTimeoffRecord(approvalDto, loggedUserId, loggedUserName));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred fetching time off records");
+        }
+    }
+
+    [HttpDelete("timeoff/{timeoffId}")]
+    public IActionResult DeleteTimeoffRecord([FromRoute] int timeoffId) 
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
         }
 
-        [HttpPost("timeoff/timesheet")]
-        public IActionResult GetTimeOffRecords([FromBody] JsonElement element)
+        try
         {
-            try
-            {
-                var jsonObject = JsonConvert.DeserializeObject<Dictionary<string,string>>(element.ToString());
-                DateTime.TryParse(jsonObject["period"], out DateTime period);
-                return Ok(_approvalBusiness.GetTimeOffRecords(period));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred fetching timeoff records");
-            }
+            int userId = HttpContext.GetUserIdInt();
+            return Ok(_approvalBusiness.DeleteTimeoffRecords(timeoffId, userId));
         }
-
-        [HttpPut("timeoff/{timeoffId}")]
-        public IActionResult UpdateTimeoffRecord([FromRoute] int timeoffId, ApprovalDto approvalDto) 
+        catch (Exception ex)
         {
-            try
-            {
-                return Ok(_approvalBusiness.UpdateTimeoffRecord(approvalDto));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred fetching timeoff records");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred deleting the time off record");
         }
+    }
 
-        [HttpDelete("timeoff/{timeoffId}")]
-        public IActionResult DeleteTimeoffRecord([FromRoute] int timeoffId) 
+    [HttpPost("timeoffrequests")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult GetTimeoffRequests([FromBody] JsonElement element)
+    {
+        try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                return Ok(_approvalBusiness.DeleteTimeoffRecords(timeoffId));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred deleting timeoff record");
-            }
-        }
-
-        [HttpPost("timeoff")]
-        public IActionResult GetTimeoffRequests([FromBody] JsonElement element)
-        {
-            try
-            {
-                int userId = 0; 
-                var paramsObj = JsonConvert.DeserializeObject<Dictionary<string,string>>(element.ToString());
-                DateTime.TryParse(paramsObj["startDate"], out DateTime startDate);
-                DateTime.TryParse(paramsObj["endDate"], out DateTime endDate);
-                bool.TryParse(paramsObj["isSupervisor"], out bool isSupervisor);
-                if (isSupervisor)
-                {
-                    userId = 561; // Get from token
-                }
-                return Ok(_approvalBusiness.GetTimeOffRequests(startDate, endDate, userId));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred fetching timeoff records");
-            }
+            int loggedUserId = HttpContext.GetUserIdInt(); 
+            var paramsObj = JsonConvert.DeserializeObject<Dictionary<string,string>>(element.ToString());
+            DateTime.TryParse(paramsObj["startDate"], out DateTime startDate);
+            DateTime.TryParse(paramsObj["endDate"], out DateTime endDate);
             
+            return Ok(_approvalBusiness.GetTimeOffRequests(startDate, endDate, loggedUserId));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred fetching timeoff records");
+        }
+        
+    }
+
+    [HttpPost("regulartime")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult GetRegularTimeRequests([FromBody] JsonElement element)
+    {
+        try
+        {
+            int loggedUserId = HttpContext.GetUserIdInt();
+            var paramsObj = JsonConvert.DeserializeObject<Dictionary<string, string>>(element.ToString());
+            DateTime.TryParse(paramsObj["startDate"], out DateTime startDate);
+            DateTime.TryParse(paramsObj["endDate"], out DateTime endDate);
+
+            return Ok(_approvalBusiness.GetRegularTimeRequests(startDate, endDate, loggedUserId));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred fetching timesheet records");
         }
 
-        [HttpPost("regulartime")]
-        public IActionResult GetRegularTimeRequests([FromBody] JsonElement element)
-        {
-            try
-            {
-                int userId = 561; // Get from token
-                var paramsObj = JsonConvert.DeserializeObject<Dictionary<string, string>>(element.ToString());
-                DateTime.TryParse(paramsObj["startDate"], out DateTime startDate);
-                DateTime.TryParse(paramsObj["endDate"], out DateTime endDate);
-                return Ok(_approvalBusiness.GetRegularTimeRequests(startDate, endDate, userId));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred fetching timesheet records");
-            }
+    }
 
+    [HttpPut("regulartime/approve")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult ApproveRegularTimeRequests([FromBody] int[] ids)
+    {
+        try
+        {
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.ApproveRegularTimeRequests(ids, loggedUserId, loggedUserName));
         }
-
-        [HttpPut("timeoff/approve")]
-        public IActionResult ApproveTimeoffRequests([FromBody] int[] ids)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_approvalBusiness.ApproveTimeoffRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred approving timeoff records");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred approving timeoff records");
         }
+    }
 
-        [HttpPut("timeoff/reopen")]
-        public IActionResult ReopenTimeoffRequests([FromBody] int[] ids)
+    [HttpPut("regulartime/reject")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult RejectRegularTimeRequests([FromBody] int[] ids)
+    {
+        try
         {
-            try
-            {
-                return Ok(_approvalBusiness.ReopenTimeoffRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred reopening timeoff records");
-            }
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.RejectRegularTimeRequests(ids, loggedUserId, loggedUserName));
         }
-
-        [HttpPut("timeoff/rejectselect")]
-        public IActionResult RejectTimeoffSelected([FromBody] int[] ids)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_approvalBusiness.RejectTimeoffSelected(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred rejecting timeoff records");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred approving timeoff records");
         }
+    }
 
-
-        [HttpPut("timeoff/reject")]
-        public IActionResult RejectTimesheetsRequests([FromBody] int[] ids)
+    [HttpPut("timeoff/approve")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult ApproveTimeoffRequests([FromBody] int[] ids)
+    {
+        try
         {
-            try
-            {
-                return Ok(_approvalBusiness.RejectTimesheetsRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred rejecting timesheets records");
-            }
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.ApproveTimeoffRequests(ids, loggedUserId, loggedUserName));
         }
-
-
-        [HttpPost("timeoff/delete")]
-        public IActionResult DeleteTimeoffRequests([FromBody] int[] ids)
+        catch (System.Exception ex)
         {
-            try
-            {
-                return Ok(_approvalBusiness.DeleteTimeoffRequests(ids));
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return StatusCode(500, "An error has occurred deleting timeoff records");
-            }
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred approving timeoff records");
+        }
+    }
+
+    // Todo: check if this endpoint is useless
+    [HttpPut("timeoff/reopen")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult ReopenTimeoffRequests([FromBody] int[] ids)
+    {
+        try
+        {
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.ReopenTimeoffRequests(ids, loggedUserId, loggedUserName));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred reopening timeoff records");
+        }
+    }
+
+    [HttpPut("timeoff/reject")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult RejectTimeoffSelected([FromBody] int[] ids)
+    {
+        try
+        {
+            int loggedUserId = HttpContext.GetUserIdInt();
+            string loggedUserName = HttpContext.GetUserNameLog();
+            return Ok(_approvalBusiness.RejectTimeoffSelected(ids, loggedUserId, loggedUserName));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred rejecting timeoff records");
+        }
+    }
+
+    [HttpPost("timeoff/delete")]
+    [AuthorizeRoles((int)UserRole.Admin, (int)UserRole.WTSAdmin)]
+    public IActionResult DeleteTimeoffRequests([FromBody] int[] ids)
+    {
+        try
+        {
+            return Ok(_approvalBusiness.DeleteTimeoffRequests(ids));
+        }
+        catch (System.Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return StatusCode(500, "An error has occurred deleting timeoff records");
         }
     }
 }

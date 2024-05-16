@@ -1,10 +1,9 @@
-﻿namespace Timesheet.Client.Models
+﻿namespace Timesheet.Client.Models;
+
+public class CreateApprovalHistory
 {
-    public class CreateApprovalHistory
-    {
-        public int ActionType { get; set; }
-        public int IdTimesheetControl { get; set; }
-        public int TimesheetType { get; set; }
-        public string Comments { get; set; }
-    }
+    public int ActionType { get; set; }
+    public int IdTimesheetControl { get; set; }
+    public int TimesheetType { get; set; }
+    public string Comments { get; set; }
 }

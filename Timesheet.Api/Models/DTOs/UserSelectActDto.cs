@@ -1,8 +1,7 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class UserSelectActDto
 {
-    public class UserSelectActDto
-    {
-        public int UserId { get; set; }
-        public string Activities { get; set; }
-    }
+    public int UserId { get; set; }
+    public string Activities { get; set; }
 }

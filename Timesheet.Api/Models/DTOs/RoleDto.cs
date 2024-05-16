@@ -1,8 +1,7 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class RoleDto
 {
-    public class RoleDto
-    {
-        public int Roleid { get; set; }
-        public string Rolename { get; set; }
-    }
+    public int Roleid { get; set; }
+    public string Rolename { get; set; }
 }

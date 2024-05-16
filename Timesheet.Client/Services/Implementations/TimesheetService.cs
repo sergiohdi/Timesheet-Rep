@@ -66,11 +66,11 @@ public class TimesheetService : ITimesheetService
         TimesheetControl = (await _timesheetControlDataSrv.CreateTimesheetControl(period)).Data;
     }
 
-    public void CalculateHoursPerColumn(DateTime startDate, DateTime endDate)
+    public void CalculateHoursPerColumn()
     {
         // make calculations to see total hours per day and per row
         TotalHoursPerDay = new Dictionary<DateTime, decimal>();
-        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        for (DateTime date = StartPeriod; date <= EndPeriod; date = date.AddDays(1))
         {
             decimal totalHours = TimesheetData.Sum(x => x.Entries.FirstOrDefault(y => y.Day == date.Day)?.TotalHours) ?? 0;
             TotalHoursPerDay.Add(date, totalHours);

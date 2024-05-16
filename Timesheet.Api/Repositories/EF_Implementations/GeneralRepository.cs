@@ -6,29 +6,28 @@ using Timesheet.Api.Models;
 using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Interfaces;
 
-namespace Timesheet.Api.Repositories.EF_Implementations
+namespace Timesheet.Api.Repositories.EF_Implementations;
+
+public class GeneralRepository : IGeneralRepository
 {
-    public class GeneralRepository : IGeneralRepository
+    private readonly TimesheetContext _db;
+    private readonly IMapper _mapper;
+
+    public GeneralRepository(TimesheetContext db, IMapper mapper)
     {
-        private readonly TimesheetContext _db;
-        private readonly IMapper _mapper;
+        _db = db;
+        _mapper = mapper;
+    }
 
-        public GeneralRepository(TimesheetContext db, IMapper mapper)
+    public IEnumerable<GeneralDto> GetGeneralRecords(string group)
+    {
+        IQueryable<General> result = _db.General.AsNoTracking();
+
+        if (!string.IsNullOrEmpty(group))
         {
-            _db = db;
-            _mapper = mapper;
+            result = result.Where(x => x.GralGroup.ToLower().Trim().Equals(group.ToLower().Trim()));
         }
 
-        public IEnumerable<GeneralDto> GetGeneralRecords(string group)
-        {
-            IQueryable<General> result = _db.General.AsNoTracking();
-
-            if (!string.IsNullOrEmpty(group))
-            {
-                result = result.Where(x => x.GralGroup.ToLower().Trim().Equals(group.ToLower().Trim()));
-            }
-
-            return _mapper.Map<IEnumerable<GeneralDto>>(result.ToList());
-        }
+        return _mapper.Map<IEnumerable<GeneralDto>>(result.ToList());
     }
 }

@@ -1,7 +1,9 @@
 ﻿@page "/"
+@attribute [Authorize]
 
-@*<div class="container" style="min-width: 100%; height: 260px;">*@
- <div class="container">
+@inject ILocalStorageService localStorageSrv
+
+<div class="container">
     <div class="jumbotron " style="  max-height:255px       /*background: url('images/bgH2O.png') no-repeat;*/">
         <p class="col-md-2">
             <img src="images/HDI.png" alt="logo HDI" class="img-responsive" style="width:140px" />
@@ -10,3 +12,13 @@
     </div>
 
 </div>
+
+@code {
+    private bool isDialogOpen = false;
+
+    private async Task onClosingPopup()
+    {
+        await localStorageSrv.RemoveItemAsync("token");
+        isDialogOpen = false;
+    }
+}

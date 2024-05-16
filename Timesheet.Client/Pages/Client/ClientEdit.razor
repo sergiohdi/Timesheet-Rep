@@ -1,5 +1,6 @@
 ﻿@page "/clients/maintenance"
 @page "/clients/maintenance/{Id:int}"
+@attribute [Authorize]
 
 @inject IGeneralDataService generalService
 @inject IClientDataService clientService
@@ -7,6 +8,7 @@
 @inject NavigationManager navManager
 @inject IClientDataService clientSrv
 
+@* Todo: move these styles to a new css file *@
 <style>
     .colorbutton {
         background-color: #ff5c1a;
@@ -170,6 +172,7 @@
         {
             Client = await GetClientById(Id);
             clientProcess = $"Edit";
+            // Todo: remove this commented code
             //clientProcess = $"Update Client - {Client.Name}";
         }
 

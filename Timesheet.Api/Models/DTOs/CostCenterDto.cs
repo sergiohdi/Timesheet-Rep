@@ -1,9 +1,8 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class CostCenterDto
 {
-    public class CostCenterDto
-    {
-        public int Costcenterid { get; set; }
-        public string Costcentername { get; set; }
-        public bool? Disabled { get; set; }
-    }
+    public int Costcenterid { get; set; }
+    public string Costcentername { get; set; }
+    public bool? Disabled { get; set; }
 }

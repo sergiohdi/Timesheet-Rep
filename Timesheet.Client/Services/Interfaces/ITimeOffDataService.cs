@@ -2,10 +2,9 @@
 using System.Threading.Tasks;
 using Timesheet.Client.Models;
 
-namespace Timesheet.Client.Services.Interfaces
+namespace Timesheet.Client.Services.Interfaces;
+
+public interface ITimeOffDataService
 {
-    public interface ITimeOffDataService
-    {
-        Task<ApiResponse<IEnumerable<TimeOff>>> GetTimeOffs();
-    }
+    Task<ApiResponse<IEnumerable<TimeOff>>> GetTimeOffs();
 }

@@ -8,69 +8,84 @@ using Timesheet.Api.Models.DTOs;
 using Timesheet.Api.Repositories.Extensions;
 using Timesheet.Api.Repositories.Interfaces;
 
-namespace Timesheet.Api.Repositories.EF_Implementations
+namespace Timesheet.Api.Repositories.EF_Implementations;
+
+public class UserRepository : IUserRepository
 {
-    public class UserRepository : IUserRepository
+    private readonly TimesheetContext _db;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IMapper _mapper;
+
+    public UserRepository(
+        TimesheetContext db, 
+        IHttpContextAccessor httpContextAccessor, 
+        IMapper mapper)
     {
-        private readonly TimesheetContext _db;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IMapper _mapper;
+        _db = db;
+        _httpContextAccessor = httpContextAccessor;
+        _mapper = mapper;
+    }
 
-        public UserRepository(TimesheetContext db, IHttpContextAccessor httpContextAccessor, IMapper mapper)
+    public IEnumerable<UserDto> GetUsers(bool? disabled)
+    {
+        IQueryable<User> result = _db.User.AsNoTracking().OrderBy(x => x.FirstName).ThenBy(x => x.LastName);
+
+        if (disabled != null)
         {
-            _db = db;
-            _httpContextAccessor = httpContextAccessor;
-            _mapper = mapper;
-        }
-        public IEnumerable<UserDto> GetUsers(bool? disabled)
-        {
-            
-            IQueryable<User> result = _db.User.AsNoTracking().OrderBy(x => x.FirstName).ThenBy(x => x.LastName);
-
-
-            if (disabled != null)
-            {
-                result = result.Where(x => x.Disabled == disabled);
-            }
-
-            return _mapper.Map<IEnumerable<UserDto>>(result.ToList());
+            result = result.Where(x => x.Disabled == disabled);
         }
 
-        public UserDto GetUser(int Id)
+        return _mapper.Map<IEnumerable<UserDto>>(result.ToList());
+    }
+
+    public UserDto GetUser(int Id)
+    {
+        User user = _db.User.AsNoTracking().FirstOrDefault(x => x.Id == Id);
+        return _mapper.Map<UserDto>(user);
+    }
+
+    public bool CreateUser(UserDto user, string password)
+    {
+        User userDb = _mapper.Map<User>(user);
+        userDb.Password = password;
+        userDb.ForcePasswordChange = true;
+        userDb.Disabled = false;
+        userDb.SetAudit(_httpContextAccessor.HttpContext, true, 1);
+
+        _db.User.Add(userDb);
+        return _db.SaveChanges() > 0;
+    }
+
+    public bool UpdateUser(UserDto user)
+    {
+        User userDb = _mapper.Map<User>(user);
+        userDb.SetAudit(_httpContextAccessor.HttpContext, true, 1);
+
+        _db.Entry(userDb).State = EntityState.Modified;
+        return _db.SaveChanges() > 0;
+    }
+
+    public bool DeleteUser(UserDto user)
+    {
+        User userDb = _mapper.Map<User>(user);
+        _db.Remove(userDb);
+
+        return _db.SaveChanges() > 0;
+    }
+    public bool ValidateUsersByDepartmentId(int departmentId) => _db.User.Any(x => x.DepartmentId == departmentId);
+
+    public UserDto GetUserByEmail(string email)
+    {
+        User user = _db.User.AsNoTracking().FirstOrDefault(x => x.Email == email && x.Disabled == false);
+        return _mapper.Map<UserDto>(user);
+    }
+
+        public bool UpdatePassword(UserDto userDto)
         {
-            User user = _db.User.AsNoTracking().FirstOrDefault(x => x.Id == Id);
-            return _mapper.Map<UserDto>(user);
-        }
+            User user = _mapper.Map<User>(userDto);
+            user.SetAudit(_httpContextAccessor.HttpContext, false, 1);
 
-        public bool CreateUser(UserDto user)
-        {
-            User userDb = _mapper.Map<User>(user);
-            userDb.Disabled = false;
-            userDb.SetAudit(_httpContextAccessor.HttpContext, true, 1);
-
-            _db.User.Add(userDb);
-            return _db.SaveChanges() > 0;
-        }
-
-        public bool UpdateUser(UserDto user)
-        {
-            User userDb = _mapper.Map<User>(user);
-            userDb.SetAudit(_httpContextAccessor.HttpContext, true, 1);
-
-            _db.Entry(userDb).State = EntityState.Modified;
-            return _db.SaveChanges() > 0;
-        }
-
-        public bool DeleteUser(UserDto user)
-        {
-            User userDb = _mapper.Map<User>(user);
-            _db.Remove(userDb);
-
-            return _db.SaveChanges() > 0;
-        }
-        public bool ValidateUsersByDepartmentId(int departmentId)
-        {
-            return _db.User.Any(x => x.DepartmentId == departmentId);
-        }
+        _db.Entry(user).State = EntityState.Modified;
+        return _db.SaveChanges() > 0;
     }
 }

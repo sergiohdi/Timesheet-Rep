@@ -1,0 +1,49 @@
+@page "/not-found"
+@layout MinimalLayout
+
+@inject NavigationManager navigation
+
+<style>
+    .unauth-container {
+        text-align: center;
+        padding: 50px;
+        color: #333;
+        background-color: #fff4f4;
+    }
+
+        .unauth-container .icon {
+            width: 100px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .unauth-container h1 {
+            color: #d8000c;
+        }
+
+        .unauth-container p {
+            margin: 20px 0;
+            color: #666;
+        }
+         
+        .unauth-container .links a {
+            margin-right: 15px;
+            color: #0077cc;
+            text-decoration: none;
+        }
+
+            .unauth-container .links a:hover {
+                text-decoration: underline;
+            }
+</style>
+
+<PageTitle>Page not found...</PageTitle>
+
+<div class="unauth-container">
+    <img src="images/no-results.png" alt="Lock Icon" class="icon">
+    <h1>We couldn't find the requested page.</h1>
+    <p>The webpage is non-existent. Please check the address or contact support if you believe this is an error.</p>
+    <div class="links">
+        <a href="javascript:history.back()">Go Back</a>
+    </div>
+</div>

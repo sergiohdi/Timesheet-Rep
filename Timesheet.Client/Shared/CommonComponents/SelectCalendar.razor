@@ -127,6 +127,7 @@
             : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
         isCalendarButtonTriggered = false;
         OnReturnDates.InvokeAsync((startDate, endDate));
+        
     }
 
     private void PreviousPeriod()
@@ -149,5 +150,6 @@
 
         isCalendarButtonTriggered = false;
         OnReturnDates.InvokeAsync((startDate, endDate));
+        
     }
 }

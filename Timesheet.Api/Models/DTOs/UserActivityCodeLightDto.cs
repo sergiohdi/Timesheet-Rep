@@ -1,9 +1,8 @@
-﻿namespace Timesheet.Api.Models.DTOs
+﻿namespace Timesheet.Api.Models.DTOs;
+
+public class UserActivityCodeLightDto
 {
-    public class UserActivityCodeLightDto
-    {
-        public int? ActivityId { get; set; }
-        public string ActivityName { get; set; }
-        public string ActivityCode { get; set; }
-    }
+    public int? ActivityId { get; set; }
+    public string ActivityName { get; set; }
+    public string ActivityCode { get; set; }
 }
